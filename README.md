@@ -1,15 +1,28 @@
 # Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance
 
+
+
+## Overview
+
+Sambodhan is an AI-based system designed to streamline citizen grievance submission, classification, prioritization, and tracking for local governance. It supports multiple submission channels (mobile app, website) and provides real-time tracking, sentiment analysis, and departmental routing.
+
+---
+
+## Features
+- Multi-channel grievance submission ( app, website)
+- Automated grievance classification and departmental routing
+- Urgency and sentiment detection
+- Admin dashboard for analytics and grievance tracking
+
+---
+
 ## Repository Structure
 
 ```
 ├── docs/
 │   ├── architecture.md
 │   ├── api.md
-│   ├── README.md
-│   ├── SambodhanAI_System Architecture Diagram.pdf
-│   ├── SambodhanAI_System Architecture Diagram-1.pdf
-│   └── 126012595.pdf
+│   └──  README.md
 ├── data/
 │   ├── raw/
 │   │   ├── complaints_processed.csv.zip
@@ -21,10 +34,6 @@
 │   ├── processed/
 │   └── external/
 ├── notebooks/
-│   ├── data_preprocessing.ipynb
-│   ├── scrapping_hello-sarkar.ipynb
-│   ├── m2m.ipynb
-│   └── sample_indic.ipynb
 ├── src/
 │   ├── __init__.py
 │   ├── backend/
