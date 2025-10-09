@@ -74,6 +74,7 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 | **dept**      | String         | The department or super-department responsible for addressing the grievance.                            | Allowed values:<br>- Municipal Governance & Community Services<br>- Education, Health & Social Welfare <br>- Infrastructure, Utilities & Natural Resources<br>- Security & Law Enforcement |
 | **urgency**   | String         | The urgency category of the grievance, based on predefined labels: `normal`, `urgent`, `highly urgent`. | "urgent"                                                                                                                 |
 
+> Detail Dataset Report: [Grievance Dataset Schema](docs/grievance_dataset_schema.md)
 
 
 ---
