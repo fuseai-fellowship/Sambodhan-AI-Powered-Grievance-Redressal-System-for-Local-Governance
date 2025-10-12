@@ -78,3 +78,18 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 
 ---
+## Department Classification Model
+
+>Link to HF-Model repo: [sambodhan-department-classification-model](https://huggingface.co/mr-kush/sambodhan-department-classification-model) 
+
+> Live Api on HF Space: [https://mr-kush-sambodhan-department-classifier.hf.space/docs](https://mr-kush-sambodhan-department-classifier.hf.space/docs)
+
+### Result:
+
+![classification report](./results/dept_classifier//dept-classification-report.png)
+
+![cofusion matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
+
+
+
+
