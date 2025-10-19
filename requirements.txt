@@ -42,7 +42,7 @@ pure_eval==0.2.3
 Pygments==2.19.2 
 python-dateutil==2.9.0.post0 
 python-dotenv==1.1.1 
-pytz==2025.2  
+pytz==2025.2 
 PyYAML==6.0.2 
 pyzmq==27.1.0 
 regex==2025.9.1 
@@ -54,8 +54,8 @@ soupsieve==2.8
 stack-data==0.6.3 
 sympy==1.13.3 
 tokenizers==0.22.0 
-torch==2.8.0+cu129 
-torchvision==0.23.0+cu129 
+torch
+torchvision
 tornado==6.5.2 
 tqdm==4.67.1 
 traitlets==5.14.3 
@@ -65,3 +65,10 @@ tzdata==2025.2
 urllib3==2.5.0 
 wcwidth==0.2.13 
 widgetsnbextension==4.0.14
+
+fastapi
+uvicorn[standard]
+SQLAlchemy
+psycopg2-binary
+python-dotenv
+pydantic
