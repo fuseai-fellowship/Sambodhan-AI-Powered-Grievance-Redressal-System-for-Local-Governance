@@ -1,23 +1,23 @@
-from sqlalchemy import Column, Integer, String, SmallInteger, CheckConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.core.database import Base
-
 
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    phone = Column(String(15))
-    location = Column(String)
-    role = Column(SmallInteger, CheckConstraint("role BETWEEN 0 AND 3"), nullable=False)
-    assigned_department = Column(SmallInteger, CheckConstraint("assigned_department BETWEEN 0 AND 3"))
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    phone = Column(String(20))
+    password_hash = Column(Text)
+    role = Column(String(20), nullable=False)  # citizen, official, mayor, super_admin
+    department = Column(Integer, CheckConstraint("department BETWEEN 0 AND 3"))
+    district_id = Column(Integer, ForeignKey("districts.id"))
+    municipality_id = Column(Integer, ForeignKey("municipalities.id"))
+    ward_id = Column(Integer, ForeignKey("wards.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
-    complaints = relationship("Complaint", back_populates="citizen", cascade="all, delete")
-    history_actions = relationship("ComplaintHistory", back_populates="changed_by_user")
-
-    def __repr__(self):
-        return f"<User(name={self.name}, role={self.role})>"
+    complaints = relationship("Complaint", back_populates="citizen")
+    status_changes = relationship("ComplaintStatusHistory", back_populates="changed_by_user")
+    misclassifications_reported = relationship("MisclassifiedComplaint", back_populates="reported_by_user")
