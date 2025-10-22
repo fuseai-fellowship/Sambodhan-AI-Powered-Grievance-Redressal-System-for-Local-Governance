@@ -1,1 +1,1 @@
-from .complaint import ComplaintBase, ComplaintCreate, ComplaintRead
+from .complaint import ComplaintBase, ComplaintCreate, ComplaintRead, ComplaintUpdate

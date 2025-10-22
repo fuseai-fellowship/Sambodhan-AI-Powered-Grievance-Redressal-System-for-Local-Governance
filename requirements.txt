@@ -73,3 +73,5 @@ SQLAlchemy
 psycopg2-binary
 python-dotenv
 pydantic
+passlib[bcrypt]
+passlib[argon2]
