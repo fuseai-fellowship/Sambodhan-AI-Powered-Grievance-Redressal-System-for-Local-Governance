@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "department": "Water Supply",
+    "urgency": "HIGHLY URGENT",
+    "location": "Kathmandu",
+    "status": "In Progress",
+    "status_history": [
+      { "status": "Pending", "date": "2025-10-10" },
+      { "status": "In Progress", "date": "2025-10-12" }
+    ],
+    "created_date": "2025-10-09"
+  },
+  {
+    "id": 2,
+    "department": "Electricity",
+    "urgency": "URGENT",
+    "location": "Lalitpur",
+    "status": "Resolved",
+    "status_history": [
+      { "status": "Pending", "date": "2025-10-08" },
+      { "status": "In Progress", "date": "2025-10-09" },
+      { "status": "Resolved", "date": "2025-10-14" }
+    ],
+    "created_date": "2025-10-07"
+  },
+  {
+    "id": 3,
+    "department": "Road Maintenance",
+    "urgency": "NORMAL",
+    "location": "Bhaktapur",
+    "status": "Pending",
+    "status_history": [
+      { "status": "Pending", "date": "2025-10-16" }
+    ],
+    "created_date": "2025-10-16"
+  },
+  {
+    "id": 4,
+    "department": "Water Supply",
+    "urgency": "URGENT",
+    "location": "Kathmandu",
+    "status": "Closed",
+    "status_history": [
+      { "status": "Pending", "date": "2025-10-10" },
+      { "status": "In Progress", "date": "2025-10-11" },
+      { "status": "Resolved", "date": "2025-10-12" },
+      { "status": "Closed", "date": "2025-10-13" }
+    ],
+    "created_date": "2025-10-09"
+  },
+  {
+    "id": 5,
+    "department": "Electricity",
+    "urgency": "HIGHLY URGENT",
+    "location": "Lalitpur",
+    "status": "In Progress",
+    "status_history": [
+      { "status": "Pending", "date": "2025-10-11" },
+      { "status": "In Progress", "date": "2025-10-12" }
+    ],
+    "created_date": "2025-10-11"
+  }
+]
+
