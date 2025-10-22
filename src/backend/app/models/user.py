@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, CheckConstraint, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.models.location import Ward
 import enum
 
 
@@ -30,3 +31,4 @@ class User(Base):
     complaints = relationship("Complaint", back_populates="citizen")
     status_changes = relationship("ComplaintStatusHistory", back_populates="changed_by_user")
     misclassifications_reported = relationship("MisclassifiedComplaint", back_populates="reported_by_user")
+    ward = relationship("Ward", back_populates="users")
