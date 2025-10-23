@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sambodhan - Citizen Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="components/chatbot.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>🏛️ Sambodhan</h2>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">✕</button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="#complaints" class="nav-item" onclick="showSection('complaints')">
+                <span class="nav-icon">📝</span>
+                <span class="nav-text">My Complaints</span>
+            </a>
+            <a href="#file-complaint" class="nav-item" onclick="showSection('file-complaint')">
+                <span class="nav-icon">➕</span>
+                <span class="nav-text">File Complaint</span>
+            </a>
+            <a href="#profile" class="nav-item" onclick="showSection('profile')">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Profile</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="handleLogout()">
+                <span>🚪</span> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="sidebar-toggle mobile-only" onclick="toggleSidebar()">☰</button>
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="user-info">
+                <span id="userName">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <h3 id="totalComplaints">0</h3>
+                        <p>Total Complaints</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-info">
+                        <h3 id="pendingComplaints">0</h3>
+                        <p>Pending</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-info">
+                        <h3 id="inProgressComplaints">0</h3>
+                        <p>In Progress</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3 id="resolvedComplaints">0</h3>
+                        <p>Resolved</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="welcome-card">
+                <h2>Welcome to Sambodhan! 👋</h2>
+                <p>Use the chatbot in the bottom-right corner to quickly file complaints, or navigate through the menu to manage your grievances.</p>
+                <div class="quick-actions">
+                    <button class="action-btn primary" onclick="openChatbot()">
+                        💬 Chat with AI Assistant
+                    </button>
+                    <button class="action-btn" onclick="showSection('file-complaint')">
+                        ➕ File New Complaint
+                    </button>
+                    <button class="action-btn" onclick="showSection('complaints')">
+                        📋 View My Complaints
+                    </button>
+                </div>
+            </div>
+
+            <div class="recent-complaints">
+                <h2>Recent Complaints</h2>
+                <div id="recentComplaintsList">
+                    <p class="loading">Loading complaints...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Complaints Section -->
+        <section id="complaints-section" class="content-section">
+            <div class="section-header">
+                <h2>My Complaints</h2>
+                <div class="filter-group">
+                    <select id="statusFilter" onchange="filterComplaints()">
+                        <option value="all">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="complaintsList" class="complaints-list">
+                <p class="loading">Loading complaints...</p>
+            </div>
+        </section>
+
+        <!-- File Complaint Section -->
+        <section id="file-complaint-section" class="content-section">
+            <div class="file-complaint-card">
+                <h2>File a New Complaint</h2>
+                <p class="section-description">
+                    💡 <strong>Tip:</strong> Use the AI chatbot for a conversational experience, or fill out the form below manually.
+                </p>
+                
+                <div class="complaint-methods">
+                    <div class="method-card">
+                        <div class="method-icon">🤖</div>
+                        <h3>AI Chatbot (Recommended)</h3>
+                        <p>Talk to our AI assistant naturally. It will understand your problem and file the complaint for you.</p>
+                        <button class="method-btn" onclick="openChatbot()">
+                            Start Chatting
+                        </button>
+                    </div>
+                    
+                    <div class="method-card">
+                        <div class="method-icon">📋</div>
+                        <h3>Manual Form</h3>
+                        <p>Prefer the traditional way? Fill out the form manually with all required details.</p>
+                        <button class="method-btn" onclick="alert('Manual form coming soon! Use chatbot for now.')">
+                            Fill Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="content-section">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <span id="profileInitials">?</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Loading...</h2>
+                        <p id="profileEmail">Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span class="detail-label">📞 Phone</span>
+                        <span class="detail-value" id="profilePhone">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">📍 Location</span>
+                        <span class="detail-value" id="profileLocation">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">👤 Role</span>
+                        <span class="detail-value" id="profileRole">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">📅 Member Since</span>
+                        <span class="detail-value" id="profileCreatedAt">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <script src="components/chatbot.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
