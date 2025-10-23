@@ -21,7 +21,12 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=False)
     phone = Column(String(20))
     password_hash = Column(Text, nullable=False)
-    role = Column(String(20), nullable=False, server_default="citizen") # citizen, official, mayor, super_admin
+    # role = Column(String(20), nullable=False, server_default="citizen") # citizen, official, mayor, super_admin
+    role = Column(
+        SQLAlchemyEnum(UserRole, name="user_role_enum"),
+        nullable=False,
+        server_default=UserRole.citizen.value
+    )
     department = Column(Integer, CheckConstraint("department BETWEEN 0 AND 4"))
     ward_id = Column(Integer, ForeignKey("wards.id", ondelete="SET NULL"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
