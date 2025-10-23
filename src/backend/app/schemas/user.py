@@ -17,7 +17,7 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
-    role: str = Field(default="citizen")
+    role: UserRole = Field(default=UserRole.citizen)
     department: Optional[int] = Field(None, ge=0, le=4)
     ward_id: int | None = None
 
