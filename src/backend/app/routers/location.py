@@ -13,7 +13,7 @@ from app.schemas.location import (
     WardCreate, WardRead,
 )
 
-router = APIRouter(prefix="/locations", tags=["Locations"])
+router = APIRouter(prefix="/api/locations", tags=["Locations"])
 
 
 # -------------------- District --------------------

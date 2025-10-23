@@ -6,7 +6,7 @@ from app.schemas.user import UserCreate, UserRead, UserUpdate
 from typing import List, Optional
 from passlib.context import CryptContext
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/api/users", tags=["Users"])
 
 # Password hashing setup
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")

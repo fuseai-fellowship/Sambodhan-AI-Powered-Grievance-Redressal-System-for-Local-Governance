@@ -1,12 +1,25 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers import complaints, user, location
+from app import chatbot_api
 
 app = FastAPI(title="Sambodhan API")
 
+# Configure CORS for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
 app.include_router(complaints.router)
 app.include_router(user.router)
 app.include_router(location.router)
+app.include_router(chatbot_api.router)
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to Sambodhan API"}
+    return {"message": "Welcome to Sambodhan API", "status": "running"}

@@ -1,0 +1,9 @@
+.robot3dViewer {
+  width: 200px;
+  height: 200px;
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 1000;
+  pointer-events: auto;
+}
