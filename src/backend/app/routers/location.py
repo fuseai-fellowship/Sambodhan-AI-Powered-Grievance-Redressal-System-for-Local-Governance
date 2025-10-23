@@ -1,14 +1,16 @@
-# app/routers/location.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pathlib import Path
+import json
+
 
 from app.core.database import get_db
 from app.models.location import District, Municipality, Ward
 from app.schemas.location import (
     DistrictCreate, DistrictRead,
     MunicipalityCreate, MunicipalityRead,
-    WardCreate, WardRead
+    WardCreate, WardRead,
 )
 
 router = APIRouter(prefix="/locations", tags=["Locations"])
@@ -175,28 +177,69 @@ def delete_ward(ward_id: int, db: Session = Depends(get_db)):
     return ward
 
 
-@router.get("/hierarchy/", response_model=List[DistrictRead])
-def read_location_hierarchy(
-    db: Session = Depends(get_db),
-    include_inactive: bool = Query(False, description="Include inactive districts, municipalities, wards")
-):
-    # Filter for active only unless include_inactive=True
-    district_query = db.query(District)
-    if not include_inactive:
-        district_query = district_query.filter(District.is_active)
+
+# @router.get("/hierarchy/", response_model=List[HeiarchyLocationRead])
+# def read_location_hierarchy(
+#     db: Session = Depends(get_db),
+#     include_inactive: bool = Query(False, description="Include inactive districts, municipalities, wards")
+# ):
+#     # Filter for active only unless include_inactive=True
+#     district_query = db.query(District)
+#     if not include_inactive:
+#         district_query = district_query.filter(District.is_active)
     
-    districts = district_query.all()
+#     districts = district_query.all()
 
-    # Preload nested relationships
-    for district in districts:
-        # Municipalities
-        if not include_inactive:
-            district.municipalities = [m for m in district.municipalities if m.is_active]
-            for m in district.municipalities:
-                m.wards = [w for w in m.wards if w.is_active]
-        else:
-            # include all municipalities and wards
-            for m in district.municipalities:
-                m.wards = m.wards
+#     # Preload nested relationships
+#     for district in districts:
+#         # Municipalities
+#         if not include_inactive:
+#             district.municipalities = [m for m in district.municipalities if m.is_active]
+#             for m in district.municipalities:
+#                 m.wards = [w for w in m.wards if w.is_active]
+#         else:
+#             # include all municipalities and wards
+#             for m in district.municipalities:
+#                 m.wards = m.wards
 
-    return districts
+#     return districts
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+with open(BASE_DIR / "location_id.json", "r", encoding="utf-8") as f:
+    location_data = json.load(f)
+
+@router.get("/location-ids")
+def get_location_ids(
+    district: Optional[str] = Query(None, description="District name"),
+    municipality: Optional[str] = Query(None, description="Municipality name"),
+    ward: Optional[int] = Query(None, description="Ward number")
+):
+    def normalize(s): return s.strip().lower() if isinstance(s, str) else s
+
+    district_n = normalize(district)
+    municipality_n = normalize(municipality)
+
+    matches = []
+    for item in location_data:
+        if district_n and normalize(item["district"]) != district_n:
+            continue
+        if municipality_n and normalize(item["municipality"]) != municipality_n:
+            continue
+        if ward and item["ward"] != ward:
+            continue
+        matches.append(item)
+
+    if not matches:
+        raise HTTPException(status_code=404, detail="No matching location found")
+
+    result = matches[0]
+    response = {}
+    if district:
+        response["district_id"] = result["district_id"]
+    if municipality:
+        response["municipality_id"] = result["municipality_id"]
+    if ward:
+        response["ward_id"] = result["ward_id"]
+
+    return response

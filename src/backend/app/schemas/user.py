@@ -25,6 +25,15 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    role: Optional[UserRole] = None
+    department: Optional[int] = Field(None, ge=0, le=4)
+    ward_id: Optional[int] = None
+    password: Optional[str] = None 
+
 
 class UserRead(UserBase):
     id: int

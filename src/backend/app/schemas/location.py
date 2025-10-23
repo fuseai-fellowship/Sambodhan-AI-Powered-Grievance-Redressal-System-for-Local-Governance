@@ -61,4 +61,12 @@ class WardRead(WardBase):
 
     class Config:
         orm_mode = True
+
+# class HeiarchyLocationRead(BaseModel):
+#     district: DistrictRead
+#     municipality: MunicipalityRead
+#     ward: WardRead
+
+#     class Config:
+#         orm_mode = True
 # -------- End of Location Schemas --------

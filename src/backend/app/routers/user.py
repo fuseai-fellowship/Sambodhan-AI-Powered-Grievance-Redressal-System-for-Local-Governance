@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 from typing import List, Optional
 from passlib.context import CryptContext
 
@@ -43,6 +43,31 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
+@router.put("/{user_id}", response_model=UserRead)
+def update_user(
+    user_id: int,
+    user_in: UserUpdate,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Handle password hashing
+    update_data = user_in.dict(exclude_unset=True)
+    if "password" in update_data:
+        update_data["password_hash"] = hash_password(update_data.pop("password"))
+
+    # Update all other fields dynamically
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 # Get all users
 @router.get("/", response_model=List[UserRead])

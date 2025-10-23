@@ -95,5 +95,5 @@ def load_locations(csv_file: str):
     print("────────────────────────────")
 
 if __name__ == "__main__":
-    csv_path = Path(__file__).resolve().parents[4] / "data/raw/location.csv"
+    csv_path = Path(__file__).resolve().parents[2] / "data/raw/location.csv"
     load_locations(csv_path)
