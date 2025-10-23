@@ -1,0 +1,13 @@
+# Chatbot Integration Dependencies
+# Add these to your main requirements.txt or install separately
+
+# HTTP client for external API calls
+httpx==0.27.0
+
+# Already in main requirements.txt:
+# fastapi
+# uvicorn
+# sqlalchemy
+# psycopg2-binary
+# pydantic
+# python-dotenv
