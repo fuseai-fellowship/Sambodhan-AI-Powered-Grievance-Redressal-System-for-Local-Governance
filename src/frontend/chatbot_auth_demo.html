@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sambodhan - Authenticated User Demo</title>
+    
+    <!-- Chatbot Styles -->
+    <link rel="stylesheet" href="components/chatbot.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .user-status {
+            padding: 15px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .user-status.logged-out {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: #6b7280;
+        }
+
+        .info {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-card">
+            <h1>🔐 Sambodhan User Authentication Demo</h1>
+            <p>This demo shows how to integrate the chatbot with user authentication.</p>
+
+            <!-- User Status -->
+            <div id="userStatus" class="user-status logged-out">
+                <strong>Status:</strong> Not logged in
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h3>Simulate User Login</h3>
+                <div class="form-group">
+                    <label for="userId">User ID (from database):</label>
+                    <input type="number" id="userId" value="1" placeholder="Enter user ID">
+                </div>
+                <div class="form-group">
+                    <label for="userName">Full Name:</label>
+                    <input type="text" id="userName" value="Ram Bahadur Sharma" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email:</label>
+                    <input type="email" id="userEmail" value="ram.sharma@example.com" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="userPhone">Phone:</label>
+                    <input type="tel" id="userPhone" value="+977-9841234567" placeholder="Enter your phone">
+                </div>
+                <button onclick="login()">Login & Start Chatbot</button>
+                <button class="secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <!-- Integration Instructions -->
+            <div class="info">
+                <h4>📘 Integration Guide</h4>
+                <p><strong>After user logs in or signs up in your main application:</strong></p>
+                <div class="code-block">// Set user data from your authentication system
+window.SambodhanChatbot.setUser({
+    user_id: 123,              // from your database
+    user_name: "Ram Sharma",   // user's full name
+    user_email: "ram@example.com",
+    user_phone: "+977-9841234567"  // optional
+});
+
+// The chatbot will now:
+// 1. Greet user by name
+// 2. Auto-fill location from user's profile (if ward_id exists)
+// 3. Link complaints to user's account
+// 4. Show user info in complaint confirmations</div>
+
+                <p><strong>When user logs out:</strong></p>
+                <div class="code-block">window.SambodhanChatbot.clearUser();</div>
+
+                <p><strong>Benefits for authenticated users:</strong></p>
+                <ul>
+                    <li>✅ Complaints automatically linked to their account</li>
+                    <li>✅ Can track all their complaints</li>
+                    <li>✅ Auto-fill location from profile (no need to re-enter)</li>
+                    <li>✅ Personalized greetings</li>
+                    <li>✅ Email/phone stored with complaint for follow-up</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Script -->
+    <script src="components/chatbot.js"></script>
+
+    <script>
+        // Simulate login
+        function login() {
+            const userData = {
+                user_id: parseInt(document.getElementById('userId').value) || null,
+                user_name: document.getElementById('userName').value || null,
+                user_email: document.getElementById('userEmail').value || null,
+                user_phone: document.getElementById('userPhone').value || null
+            };
+
+            // Set user data in chatbot
+            window.SambodhanChatbot.setUser(userData);
+
+            // Update UI
+            updateUserStatus(userData);
+
+            // Open chatbot
+            window.SambodhanChatbot.open();
+        }
+
+        // Simulate logout
+        function logout() {
+            window.SambodhanChatbot.clearUser();
+            
+            updateUserStatus(null);
+
+            alert('User logged out. Chatbot will work in anonymous mode.');
+        }
+
+        function updateUserStatus(userData) {
+            const statusDiv = document.getElementById('userStatus');
+            
+            if (userData && userData.user_id) {
+                statusDiv.className = 'user-status';
+                statusDiv.innerHTML = `
+                    <strong>Status:</strong> ✅ Logged in<br>
+                    <strong>User ID:</strong> ${userData.user_id}<br>
+                    <strong>Name:</strong> ${userData.user_name}<br>
+                    <strong>Email:</strong> ${userData.user_email}<br>
+                    <strong>Phone:</strong> ${userData.user_phone || 'Not provided'}
+                `;
+            } else {
+                statusDiv.className = 'user-status logged-out';
+                statusDiv.innerHTML = '<strong>Status:</strong> ❌ Not logged in (anonymous mode)';
+            }
+        }
+
+        // Check initial status
+        window.addEventListener('load', function() {
+            const currentUser = window.SambodhanChatbot.getUser();
+            updateUserStatus(currentUser.user_id ? currentUser : null);
+        });
+    </script>
+</body>
+</html>
