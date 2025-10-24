@@ -27,6 +27,19 @@ class ComplaintUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)  # Allows ORM-like usage
 
+class ComplaintDetailUpdate(BaseModel):
+    department: Optional[int] = Field(None, ge=0, le=4, description="Department code (0–4)")
+    urgency: Optional[int] = Field(None, ge=0, le=3, description="Urgency level (0–3)")
+    message: Optional[str] = None
+    district_id: Optional[int] = None
+    municipality_id: Optional[int] = None
+    ward_id: Optional[int] = None
+    current_status: Optional[int] = Field(None, ge=0, le=3)
+    message_processed: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 
 # For reading/returning complaints from DB
 class ComplaintRead(ComplaintBase):

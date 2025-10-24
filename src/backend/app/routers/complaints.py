@@ -90,42 +90,6 @@ async def predict_department(text: str) -> Dict[str, Any]:
         return {"department": 0, "confidence": 0.0}
 
 
-# 🔹 GET: Fetch complaints (with optional filters)
-@router.get("/", response_model=list[schemas.ComplaintRead])
-def get_complaints(
-    department: int | None = Query(None),
-    urgency: int | None = Query(None),
-    status: int | None = Query(None),
-    district_id: int | None = Query(None),
-    municipality_id: int | None = Query(None),
-    ward_id: int | None = Query(None),
-    db: Session = Depends(get_db),
-):
-    query = db.query(models.Complaint)
-
-    # Apply optional filters
-    if department is not None:
-        query = query.filter(models.Complaint.department == department)
-    if urgency is not None:
-        query = query.filter(models.Complaint.urgency == urgency)
-    if status is not None:
-        query = query.filter(models.Complaint.current_status == status)
-    if district_id is not None:
-        query = query.filter(models.Complaint.district_id == district_id)
-    if municipality_id is not None:
-        query = query.filter(models.Complaint.municipality_id == municipality_id)
-    if ward_id is not None:
-        query = query.filter(models.Complaint.ward_id == ward_id)
-
-    complaints = query.all()
-
-    return {
-        "success": True,
-        "count": len(complaints),
-        "data": complaints
-    }
-
-
 # 🔹 POST: Create new complaint
 @router.post("/", response_model=schemas.ComplaintRead)
 async def create_complaint(complaint: schemas.ComplaintCreate, db: Session = Depends(get_db)):
@@ -190,12 +154,56 @@ def update_complaint(complaint_id: int, updated: schemas.ComplaintUpdate, db: Se
     db.commit()
     db.refresh(db_complaint)
 
-    return {
-        "success": True,
-        "message": "Complaint updated successfully.",
-        "data": db_complaint
-    }
+    return db_complaint
+# 🔹 PUT: Full update of complaint details
+@router.put("/{complaint_id}", response_model=schemas.ComplaintRead)
+def update_complaint_details(
+    complaint_id: int,
+    updated: schemas.ComplaintDetailUpdate,
+    db: Session = Depends(get_db)
+):
+    db_complaint = db.query(models.Complaint).filter(models.Complaint.id == complaint_id).first()
+    if not db_complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
 
+    update_data = updated.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_complaint, key, value)
+
+    db.commit()
+    db.refresh(db_complaint)
+    return db_complaint
+
+# 🔹 GET: Fetch complaints (with optional filters)
+@router.get("/", response_model=list[schemas.ComplaintRead])
+def get_complaints(
+    department: int | None = Query(None),
+    urgency: int | None = Query(None),
+    status: int | None = Query(None),
+    district_id: int | None = Query(None),
+    municipality_id: int | None = Query(None),
+    ward_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.Complaint)
+
+    # Apply optional filters
+    if department is not None:
+        query = query.filter(models.Complaint.department == department)
+    if urgency is not None:
+        query = query.filter(models.Complaint.urgency == urgency)
+    if status is not None:
+        query = query.filter(models.Complaint.current_status == status)
+    if district_id is not None:
+        query = query.filter(models.Complaint.district_id == district_id)
+    if municipality_id is not None:
+        query = query.filter(models.Complaint.municipality_id == municipality_id)
+    if ward_id is not None:
+        query = query.filter(models.Complaint.ward_id == ward_id)
+
+    complaints = query.all()
+
+    return complaints
 
 # GET: Fetch a single complaint by ID
 @router.get("/{complaint_id}", response_model=schemas.ComplaintRead)

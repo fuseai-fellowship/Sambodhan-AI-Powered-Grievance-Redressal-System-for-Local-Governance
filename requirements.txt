@@ -143,3 +143,5 @@ pydantic
 passlib[bcrypt]
 passlib[argon2]
 pydantic[email]
+jwt
+httpx
