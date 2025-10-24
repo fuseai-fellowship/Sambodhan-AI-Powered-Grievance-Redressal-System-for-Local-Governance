@@ -68,7 +68,7 @@ class MisclassifiedComplaintRead(BaseModel):
     correct_urgency: Optional[int] = None
     correct_department: Optional[int] = None
     reported_by_user_id: Optional[int] = None
-    reviewed: bool
+    reviewed: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
