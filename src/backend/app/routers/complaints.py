@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_
 from app.core.database import SessionLocal
 from app import models, schemas
+from typing import Optional
 import httpx
 import os
 from typing import Dict, Any
@@ -139,6 +140,79 @@ async def create_complaint(complaint: schemas.ComplaintCreate, db: Session = Dep
 #         "data": db_complaint
 #     }
 
+# 🔹 POST: Report a misclassified complaint
+@router.post("/misclassified", response_model=schemas.MisclassifiedComplaintRead)
+def report_misclassification(
+    data: schemas.MisclassifiedComplaintCreate,
+    db: Session = Depends(get_db)
+):
+    # ✅ Check if the complaint exists
+    complaint = db.query(models.Complaint).filter(models.Complaint.id == data.complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    # ✅ If fields are left null → means classification was correct → use predicted values
+    correct_urgency = data.correct_urgency if data.correct_urgency is not None else complaint.urgency
+    correct_department = data.correct_department if data.correct_department is not None else complaint.department
+
+    # ✅ Create misclassified record
+    misclassified = models.MisclassifiedComplaint(
+        complaint_id=complaint.id,
+        model_predicted_urgency=complaint.urgency,
+        model_predicted_department=complaint.department,
+        correct_urgency=correct_urgency,
+        correct_department=correct_department,
+        reported_by_user_id=data.reported_by_user_id
+    )
+
+    try:
+        db.add(misclassified)
+        db.commit()
+        db.refresh(misclassified)
+        return misclassified
+    except IntegrityError as exc:
+        db.rollback()
+        error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
+        raise HTTPException(status_code=400, detail=f"Database error: {error_msg}") from exc
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Server error: {str(exc)}") from exc
+
+
+
+# 🔹 GET: Fetch all or filtered misclassified complaints
+@router.get("/misclassified", response_model=list[schemas.MisclassifiedComplaintRead])
+def get_misclassified_complaints(
+    reviewed: bool | None = Query(False, description="Filter by review status (True/False)"),
+    complaint_id: int | None = Query(None, description="Filter by complaint ID"),
+    reported_by_user_id: int | None = Query(None, description="Filter by reporter user ID"),
+    only_mismatched: Optional[str] = Query(
+        "false",
+        description="If true/True/1, return only records where model prediction != correct value"
+    ),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.MisclassifiedComplaint)
+
+    # Convert string-based boolean
+    only_mismatched_value = str(only_mismatched).lower() in {"true", "1", "yes"}
+
+    # Apply filters
+    if reviewed is not None:
+        query = query.filter(models.MisclassifiedComplaint.reviewed == reviewed)
+    if complaint_id is not None:
+        query = query.filter(models.MisclassifiedComplaint.complaint_id == complaint_id)
+    if reported_by_user_id is not None:
+        query = query.filter(models.MisclassifiedComplaint.reported_by_user_id == reported_by_user_id)
+    if only_mismatched_value:
+        query = query.filter(
+            (models.MisclassifiedComplaint.correct_urgency != models.MisclassifiedComplaint.model_predicted_urgency) |
+            (models.MisclassifiedComplaint.correct_department != models.MisclassifiedComplaint.model_predicted_department)
+        )
+
+    results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
+    return results
+
 
 # 🔹 PATCH: Update complaint (partial update)
 @router.patch("/{complaint_id}", response_model=dict)
@@ -212,3 +286,4 @@ def get_complaint(complaint_id: int, db: Session = Depends(get_db)):
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     return complaint
+

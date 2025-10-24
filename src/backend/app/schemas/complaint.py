@@ -51,3 +51,25 @@ class ComplaintRead(ComplaintBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# -------------------- Misclassified Complaints --------------------
+
+class MisclassifiedComplaintCreate(BaseModel):
+    complaint_id: int = Field(..., description="ID of the complaint being corrected")
+    correct_urgency: Optional[int] = Field(None, ge=0, le=3, description="Correct urgency level if predicted was wrong")
+    correct_department: Optional[int] = Field(None, ge=0, le=4, description="Correct department code if predicted was wrong")
+    reported_by_user_id: Optional[int] = Field(None, description="User ID of the reporter")
+
+class MisclassifiedComplaintRead(BaseModel):
+    id: int
+    complaint_id: int
+    model_predicted_urgency: Optional[int] = None
+    model_predicted_department: Optional[int] = None
+    correct_urgency: Optional[int] = None
+    correct_department: Optional[int] = None
+    reported_by_user_id: Optional[int] = None
+    reviewed: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
