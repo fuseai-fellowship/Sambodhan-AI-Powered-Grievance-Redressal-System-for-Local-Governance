@@ -213,6 +213,47 @@ def get_misclassified_complaints(
     results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
     return results
 
+# 🔹 GET: Fetch only misclassified urgency complaints
+@router.get("/misclassified/urgency", response_model=list[schemas.MisclassifiedComplaintRead])
+def get_misclassified_urgency_complaints(
+    reviewed: bool | None = Query(False, description="Filter by review status (True/False)"),
+    reported_by_user_id: int | None = Query(None, description="Filter by reporter user ID"),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.MisclassifiedComplaint).filter(
+        models.MisclassifiedComplaint.correct_urgency != models.MisclassifiedComplaint.model_predicted_urgency
+    )
+
+    # Apply optional filters
+    if reviewed is not None:
+        query = query.filter(models.MisclassifiedComplaint.reviewed == reviewed)
+    if reported_by_user_id is not None:
+        query = query.filter(models.MisclassifiedComplaint.reported_by_user_id == reported_by_user_id)
+
+    results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
+    return results
+
+
+# 🔹 GET: Fetch only misclassified department complaints
+@router.get("/misclassified/department", response_model=list[schemas.MisclassifiedComplaintRead])
+def get_misclassified_department_complaints(
+    reviewed: bool | None = Query(False, description="Filter by review status (True/False)"),
+    reported_by_user_id: int | None = Query(None, description="Filter by reporter user ID"),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.MisclassifiedComplaint).filter(
+        models.MisclassifiedComplaint.correct_department != models.MisclassifiedComplaint.model_predicted_department
+    )
+
+    # Apply optional filters
+    if reviewed is not None:
+        query = query.filter(models.MisclassifiedComplaint.reviewed == reviewed)
+    if reported_by_user_id is not None:
+        query = query.filter(models.MisclassifiedComplaint.reported_by_user_id == reported_by_user_id)
+
+    results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
+    return results
+
 
 # 🔹 PATCH: Update complaint (partial update)
 @router.patch("/{complaint_id}", response_model=dict)
