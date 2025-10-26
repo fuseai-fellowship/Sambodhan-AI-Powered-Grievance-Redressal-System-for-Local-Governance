@@ -12,6 +12,12 @@ DEPARTMENT_LABEL_MAP = {
     2: "Infrastructure, Utilities & Natural Resources",
     3: "Security & Law Enforcement"
 }
+STATUS_LABEL_MAP = {
+    0: "PENDING",
+    1: "IN PROCESS",
+    2: "RESOLVED",
+    3: "REJECTED"
+}
 
 
 # ---------------- Base ----------------
@@ -41,7 +47,7 @@ class ComplaintDetailUpdate(BaseModel):
     urgency: Optional[Union[int, str]] = Field(None)
     message: Optional[str] = None
     ward_id: Optional[int] = None
-    current_status: Optional[int] = Field(None, ge=0, le=3)
+    current_status: Optional[Union[int, str]] = Field(None)
     message_processed: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,7 +57,7 @@ class ComplaintRead(BaseModel):
     citizen_id: Optional[int] = None
     department: Optional[str] = None
     urgency: Optional[str] = None
-    current_status: Optional[int] = None
+    current_status: Optional[str] = None
     message: str
     # message_processed: Optional[str] = None
     # ward_id: Optional[int] = None

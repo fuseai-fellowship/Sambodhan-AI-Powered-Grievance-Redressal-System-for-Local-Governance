@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from app.core.database import SessionLocal
 from app.utils.label_converter import resolve_label
-from app.schemas.complaint import DEPARTMENT_LABEL_MAP, URGENCY_LABEL_MAP
+from app.schemas.complaint import DEPARTMENT_LABEL_MAP, URGENCY_LABEL_MAP, STATUS_LABEL_MAP
 from app import models, schemas
 from typing import Optional
 import httpx
@@ -284,6 +284,9 @@ def update_complaint_details(
     if not db_complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
 
+    updated.current_status = resolve_label(
+        updated.current_status, STATUS_LABEL_MAP
+    ) if updated.current_status is not None else db_complaint.current_status
     update_data = updated.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_complaint, key, value)

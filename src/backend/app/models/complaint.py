@@ -49,7 +49,13 @@ class Complaint(Base):
         nullable=True
     )
 
-    current_status = Column(Integer, CheckConstraint("current_status BETWEEN 0 AND 3"), nullable=True)
+    current_status = Column(
+        String(20),
+        CheckConstraint(
+            "current_status IN ('PENDING', 'IN PROCESS', 'RESOLVED', 'REJECTED')"
+        ),
+        default="PENDING",
+    )
     date_submitted = Column(DateTime(timezone=True), server_default=func.now())
     ward_id = Column(Integer, ForeignKey("wards.id", ondelete="SET NULL"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
