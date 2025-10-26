@@ -63,34 +63,28 @@ async def predict_urgency(text: str) -> Dict[str, Any]:
 async def predict_department(text: str) -> Dict[str, Any]:
     """
     Call external department classifier API.
-    Returns: {"department": int, "confidence": float}
+    Returns: {"department": str, "confidence": float}
     """
     try:
         async with httpx.AsyncClient(timeout=CLASSIFIER_TIMEOUT_SECONDS) as client:
             response = await client.post(
-                f"{DEPARTMENT_API_BASE}/predict_department",
+                f"{DEPARTMENT_API_BASE}/predict",
                 json={"text": text, "return_probabilities": False}
             )
             response.raise_for_status()
             result = response.json()
-            
-            # Map string department to int code
-            dept_map = {
-                "infrastructure": 0,
-                "health": 1,
-                "education": 2,
-                "environment": 3
-            }
-            dept_code = dept_map.get(result.get("department", "").lower(), 0)
-            
+
+            # Use the label directly (official department name)
+            department_label = result.get("label", "").strip()
+
             return {
-                "department": dept_code,
+                "department": department_label or "Unclassified",
                 "confidence": result.get("confidence", 0.0)
             }
     except Exception as e:
         print(f"Department classifier error: {str(e)}")
-        # Fallback to unclassified if classifier fails
-        return {"department": 0, "confidence": 0.0}
+        return {"department": "Unclassified", "confidence": 0.0}
+
 
 
 # 🔹 POST: Create new complaint
