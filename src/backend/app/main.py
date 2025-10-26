@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import complaints, user, location
 from app import chatbot_api
+from app.analytics.router import router as analytics_router
+
+
+
 
 app = FastAPI(title="Sambodhan API")
 
@@ -19,6 +23,7 @@ app.include_router(complaints.router)
 app.include_router(user.router)
 app.include_router(location.router)
 app.include_router(chatbot_api.router)
+app.include_router(analytics_router)
 
 @app.get("/")
 def root():
