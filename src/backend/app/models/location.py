@@ -49,3 +49,4 @@ class Ward(Base):
 
     municipality = relationship("Municipality", back_populates="wards")
     users = relationship("User", back_populates="ward")
+    complaints = relationship("Complaint", back_populates="ward")

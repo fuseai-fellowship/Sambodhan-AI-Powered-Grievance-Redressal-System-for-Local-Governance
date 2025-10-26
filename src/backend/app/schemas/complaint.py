@@ -1,72 +1,88 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field, ConfigDict
+from app.schemas.location import WardRead
 
 
-# Shared fields (used by both create & update)
+# Mappings
+URGENCY_LABEL_MAP = {0: "NORMAL", 1: "URGENT", 2: "HIGHLY URGENT"}
+DEPARTMENT_LABEL_MAP = {
+    0: "Municipal Governance & Community Services",
+    1: "Education, Health & Social Welfare",
+    2: "Infrastructure, Utilities & Natural Resources",
+    3: "Security & Law Enforcement"
+}
+
+
+# ---------------- Base ----------------
 class ComplaintBase(BaseModel):
-    department: int = Field(0, ge=0, le=4, description="Department code (0–4)")
+    # department: Optional[Union[int, str]] = Field(
+    #     None, description="Department code (0–3) or string label"
+    # )
     message: str
-    urgency: int = Field(0, ge=0, le=3, description="Urgency level (0–3)")
+    # urgency: Optional[Union[int, str]] = Field(
+    #     None, description="Urgency code (0–2) or string label"
+    # )
 
 
-# For creating a new complaint
 class ComplaintCreate(ComplaintBase):
-    citizen_id: Optional[int] = Field(
-        None, description="Citizen ID (optional for anonymous complaints)"
-    )
-    district_id: int = Field(..., description="District ID")
-    municipality_id: int = Field(..., description="Municipality ID")
-    ward_id: int = Field(..., description="Ward ID")
+    citizen_id: Optional[int] = None
+    ward_id: int | None = None
 
 
-# For updating complaint status or message
 class ComplaintUpdate(BaseModel):
-    current_status: Optional[int] = Field(None, ge=0, le=3, description="Complaint status (0–3)")
-    message_processed: Optional[str] = Field(None, description="Processed message by system or admin")
+    current_status: Optional[int] = Field(None, ge=0, le=3)
+    message_processed: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    model_config = ConfigDict(from_attributes=True)  # Allows ORM-like usage
 
 class ComplaintDetailUpdate(BaseModel):
-    department: Optional[int] = Field(None, ge=0, le=4, description="Department code (0–4)")
-    urgency: Optional[int] = Field(None, ge=0, le=3, description="Urgency level (0–3)")
+    department: Optional[Union[int, str]] = Field(None)
+    urgency: Optional[Union[int, str]] = Field(None)
     message: Optional[str] = None
-    district_id: Optional[int] = None
-    municipality_id: Optional[int] = None
     ward_id: Optional[int] = None
     current_status: Optional[int] = Field(None, ge=0, le=3)
     message_processed: Optional[str] = None
-
     model_config = ConfigDict(from_attributes=True)
 
 
-
-# For reading/returning complaints from DB
-class ComplaintRead(ComplaintBase):
+class ComplaintRead(BaseModel):
     id: int
     citizen_id: Optional[int] = None
-    current_status: int = Field(0, ge=0, le=3, description="Complaint current status (0–3)")
+    department: Optional[str] = None
+    urgency: Optional[str] = None
+    current_status: Optional[int] = None
+    message: str
+    # message_processed: Optional[str] = None
+    # ward_id: Optional[int] = None
+    ward: WardRead | None = None
     date_submitted: datetime
     created_at: datetime
     updated_at: datetime
-
     model_config = ConfigDict(from_attributes=True)
+
 
 # -------------------- Misclassified Complaints --------------------
 
+
 class MisclassifiedComplaintCreate(BaseModel):
     complaint_id: int = Field(..., description="ID of the complaint being corrected")
-    correct_urgency: Optional[int] = Field(None, ge=0, le=3, description="Correct urgency level if predicted was wrong")
-    correct_department: Optional[int] = Field(None, ge=0, le=4, description="Correct department code if predicted was wrong")
-    reported_by_user_id: Optional[int] = Field(None, description="User ID of the reporter")
-
+    correct_urgency: Optional[Union[int, str]] = Field(
+        None, description="Correct urgency (int code 0–2 or string label)"
+    )
+    correct_department: Optional[Union[int, str]] = Field(
+        None, description="Correct department (int code 0–3 or string label)"
+    )
+    reported_by_user_id: Optional[int] = Field(
+        None, description="User ID of the reporter"
+    )
 class MisclassifiedComplaintRead(BaseModel):
     id: int
     complaint_id: int
-    model_predicted_urgency: Optional[int] = None
-    model_predicted_department: Optional[int] = None
-    correct_urgency: Optional[int] = None
-    correct_department: Optional[int] = None
+    model_predicted_urgency: Optional[str] = None
+    model_predicted_department: Optional[str] = None
+    correct_urgency: Optional[str] = None
+    correct_department: Optional[str] = None
     reported_by_user_id: Optional[int] = None
     reviewed: bool = False
     created_at: datetime
