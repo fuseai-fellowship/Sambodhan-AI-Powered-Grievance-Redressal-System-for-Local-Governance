@@ -94,13 +94,17 @@ async def create_complaint(
     db: Session = Depends(get_db)
 ):
     # ✅ Check if citizen exists (if provided)
+    user = None
     if complaint.citizen_id is not None:
-        user_exists = db.query(models.User).filter(models.User.id == complaint.citizen_id).first()
-        if not user_exists:
+        user = db.query(models.User).filter(models.User.id == complaint.citizen_id).first()
+        if not user:
             raise HTTPException(status_code=400, detail="Citizen with this ID does not exist")
 
     complaint_data = complaint.model_dump()
 
+    # ✅ Auto-assign ward_id from citizen if not provided
+    if complaint_data.get("ward_id") is None and user is not None:
+        complaint_data["ward_id"] = user.ward_id
     # ✅ ML classification
     try:
         urgency_result = await predict_urgency(complaint.message)

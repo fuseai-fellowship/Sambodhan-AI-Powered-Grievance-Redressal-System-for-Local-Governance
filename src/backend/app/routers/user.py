@@ -30,7 +30,7 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
     # Create new user
     new_user = User(
-        name=user_in.name,
+        name=user_in.name.upper(),
         email=user_in.email,
         phone=user_in.phone,
         role=user_in.role,
