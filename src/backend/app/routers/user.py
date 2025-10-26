@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.schemas.user import DEPARTMENT_LABEL_MAP, UserCreate, UserRead, UserUpdate
+from app.utils.label_converter import resolve_label
 from typing import List, Optional
 from passlib.context import CryptContext
 
@@ -33,7 +34,7 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
         email=user_in.email,
         phone=user_in.phone,
         role=user_in.role,
-        department=user_in.department,
+        department=resolve_label(user_in.department, DEPARTMENT_LABEL_MAP),
         password_hash=hash_password(user_in.password),
         ward_id=user_in.ward_id,
     )
@@ -57,7 +58,7 @@ def update_user(
         )
 
     # Handle password hashing
-    update_data = user_in.dict(exclude_unset=True)
+    update_data = user_in.model_dump(exclude_unset=True)
     if "password" in update_data:
         update_data["password_hash"] = hash_password(update_data.pop("password"))
 

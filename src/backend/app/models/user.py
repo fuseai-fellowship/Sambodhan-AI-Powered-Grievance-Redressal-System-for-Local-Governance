@@ -27,7 +27,18 @@ class User(Base):
         nullable=False,
         server_default=UserRole.citizen.value
     )
-    department = Column(Integer, CheckConstraint("department BETWEEN 0 AND 4"))
+    department = Column(
+        String(100),
+        CheckConstraint(
+            "department IN ("
+            "'Municipal Governance & Community Services', "
+            "'Education, Health & Social Welfare', "
+            "'Infrastructure, Utilities & Natural Resources', "
+            "'Security & Law Enforcement'"
+            ")"
+        ),
+        nullable=True
+    )
     ward_id = Column(Integer, ForeignKey("wards.id", ondelete="SET NULL"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
