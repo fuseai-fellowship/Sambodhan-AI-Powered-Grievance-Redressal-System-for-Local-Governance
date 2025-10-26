@@ -34,6 +34,7 @@ class ComplaintBase(BaseModel):
 class ComplaintCreate(ComplaintBase):
     citizen_id: Optional[int] = None
     ward_id: int | None = None
+    date_submitted: Optional[datetime] = None 
 
 
 class ComplaintUpdate(BaseModel):
