@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import complaints, user, location
 from app import chatbot_api
-from app.analytics.router import router as analytics_router
+# from app.analytics.router import router as analytics_router
+from app.routers.analytics import router as analytics_router
+
+
 
 
 
