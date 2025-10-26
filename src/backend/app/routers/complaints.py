@@ -105,6 +105,11 @@ async def create_complaint(
     # ✅ Auto-assign ward_id from citizen if not provided
     if complaint_data.get("ward_id") is None and user is not None:
         complaint_data["ward_id"] = user.ward_id
+
+    if complaint_data.get("date_submitted") is None:
+        complaint_data["date_submitted"] = datetime.utcnow()
+
+    
     # ✅ ML classification
     try:
         urgency_result = await predict_urgency(complaint.message)
