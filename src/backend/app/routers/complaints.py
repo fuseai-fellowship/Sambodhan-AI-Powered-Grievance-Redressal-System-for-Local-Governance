@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from app.core.database import SessionLocal
+from app.utils.label_converter import resolve_label
+from app.schemas.complaint import DEPARTMENT_LABEL_MAP, URGENCY_LABEL_MAP
 from app import models, schemas
 from typing import Optional
 import httpx
@@ -42,9 +44,9 @@ async def predict_urgency(text: str) -> Dict[str, Any]:
             result = response.json()
             # Map model label to int code
             label_map = {
-                "NORMAL": 1,
-                "URGENT": 2,
-                "HIGHLY URGENT": 3
+                "NORMAL": 0,
+                "URGENT": 1,
+                "HIGHLY URGENT": 2
             }
             urgency_code = label_map.get(result.get("label", "").upper(), 0)
             return {
@@ -74,10 +76,10 @@ async def predict_department(text: str) -> Dict[str, Any]:
             
             # Map string department to int code
             dept_map = {
-                "infrastructure": 1,
-                "health": 2,
-                "education": 3,
-                "environment": 4
+                "infrastructure": 0,
+                "health": 1,
+                "education": 2,
+                "environment": 3
             }
             dept_code = dept_map.get(result.get("department", "").lower(), 0)
             
@@ -93,27 +95,36 @@ async def predict_department(text: str) -> Dict[str, Any]:
 
 # 🔹 POST: Create new complaint
 @router.post("/", response_model=schemas.ComplaintRead)
-async def create_complaint(complaint: schemas.ComplaintCreate, db: Session = Depends(get_db)):
-    # ✅ Check if citizen exists if provided
+async def create_complaint(
+    complaint: schemas.ComplaintCreate,
+    db: Session = Depends(get_db)
+):
+    # ✅ Check if citizen exists (if provided)
     if complaint.citizen_id is not None:
         user_exists = db.query(models.User).filter(models.User.id == complaint.citizen_id).first()
         if not user_exists:
             raise HTTPException(status_code=400, detail="Citizen with this ID does not exist")
 
-    # Create complaint data
     complaint_data = complaint.model_dump()
-    # ML classification
+
+    # ✅ ML classification
     try:
         urgency_result = await predict_urgency(complaint.message)
-        print(f"Urgency classifier raw result: {urgency_result}")
         department_result = await predict_department(complaint.message)
-        print(f"Department classifier raw result: {department_result}")
-        complaint_data["urgency"] = urgency_result["urgency"]
-        complaint_data["department"] = department_result["department"]
-        print(f"ML Classification: urgency={{urgency_result['urgency']}}, department={{department_result['department']}}")
+
+        print(f"ML Classification: urgency={urgency_result['urgency']}, department={department_result['department']}")
+
+        # Convert predicted numeric values to string labels before saving
+        complaint_data["urgency"] = resolve_label(urgency_result["urgency"], URGENCY_LABEL_MAP)
+        complaint_data["department"] = resolve_label(department_result["department"], DEPARTMENT_LABEL_MAP)
+
     except Exception as e:
         print(f"ML classification failed, using defaults: {str(e)}")
-    # Create complaint with data
+        # fallback if prediction fails
+        complaint_data["urgency"] = resolve_label(complaint.urgency, URGENCY_LABEL_MAP)
+        complaint_data["department"] = resolve_label(complaint.department, DEPARTMENT_LABEL_MAP)
+
+    # ✅ Save to DB
     db_complaint = models.Complaint(**complaint_data)
     try:
         db.add(db_complaint)
@@ -127,6 +138,8 @@ async def create_complaint(complaint: schemas.ComplaintCreate, db: Session = Dep
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Server error: {str(exc)}") from exc
+
+
 # @router.post("/", response_model=dict)
 # def create_complaint(complaint: schemas.ComplaintCreate, db: Session = Depends(get_db)):
 #     db_complaint = models.Complaint(**complaint.model_dump())
@@ -151,17 +164,13 @@ def report_misclassification(
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
 
-    # ✅ If fields are left null → means classification was correct → use predicted values
-    correct_urgency = data.correct_urgency if data.correct_urgency is not None else complaint.urgency
-    correct_department = data.correct_department if data.correct_department is not None else complaint.department
-
     # ✅ Create misclassified record
     misclassified = models.MisclassifiedComplaint(
         complaint_id=complaint.id,
         model_predicted_urgency=complaint.urgency,
         model_predicted_department=complaint.department,
-        correct_urgency=correct_urgency,
-        correct_department=correct_department,
+        correct_urgency=resolve_label(data.correct_urgency, URGENCY_LABEL_MAP) if data.correct_urgency is not None else complaint.urgency,
+        correct_department=resolve_label(data.correct_department, DEPARTMENT_LABEL_MAP) if data.correct_department is not None else complaint.department,
         reported_by_user_id=data.reported_by_user_id
     )
 
@@ -181,37 +190,37 @@ def report_misclassification(
 
 
 # 🔹 GET: Fetch all or filtered misclassified complaints
-@router.get("/misclassified", response_model=list[schemas.MisclassifiedComplaintRead])
-def get_misclassified_complaints(
-    reviewed: bool | None = Query(False, description="Filter by review status (True/False)"),
-    complaint_id: int | None = Query(None, description="Filter by complaint ID"),
-    reported_by_user_id: int | None = Query(None, description="Filter by reporter user ID"),
-    only_mismatched: Optional[str] = Query(
-        "false",
-        description="If true/True/1, return only records where model prediction != correct value"
-    ),
-    db: Session = Depends(get_db)
-):
-    query = db.query(models.MisclassifiedComplaint)
+# @router.get("/misclassified", response_model=list[schemas.MisclassifiedComplaintRead])
+# def get_misclassified_complaints(
+#     reviewed: bool | None = Query(False, description="Filter by review status (True/False)"),
+#     complaint_id: int | None = Query(None, description="Filter by complaint ID"),
+#     reported_by_user_id: int | None = Query(None, description="Filter by reporter user ID"),
+#     only_mismatched: Optional[str] = Query(
+#         "false", description="If true/True/1, return only records where model prediction != correct value"
+#     ),
+#     db: Session = Depends(get_db)
+# ):
+#     query = db.query(models.MisclassifiedComplaint)
+#     only_mismatched_value = str(only_mismatched).lower() in {"true", "1", "yes"}
 
-    # Convert string-based boolean
-    only_mismatched_value = str(only_mismatched).lower() in {"true", "1", "yes"}
+#     # ✅ Apply filters
+#     if reviewed is not None:
+#         query = query.filter(models.MisclassifiedComplaint.reviewed == reviewed)
+#     if complaint_id is not None:
+#         query = query.filter(models.MisclassifiedComplaint.complaint_id == complaint_id)
+#     if reported_by_user_id is not None:
+#         query = query.filter(models.MisclassifiedComplaint.reported_by_user_id == reported_by_user_id)
+#     if only_mismatched_value:
+#         query = query.filter(
+#             or_(
+#                 models.MisclassifiedComplaint.correct_urgency != models.MisclassifiedComplaint.model_predicted_urgency,
+#                 models.MisclassifiedComplaint.correct_department != models.MisclassifiedComplaint.model_predicted_department,
+#             )
+#         )
 
-    # Apply filters
-    if reviewed is not None:
-        query = query.filter(models.MisclassifiedComplaint.reviewed == reviewed)
-    if complaint_id is not None:
-        query = query.filter(models.MisclassifiedComplaint.complaint_id == complaint_id)
-    if reported_by_user_id is not None:
-        query = query.filter(models.MisclassifiedComplaint.reported_by_user_id == reported_by_user_id)
-    if only_mismatched_value:
-        query = query.filter(
-            (models.MisclassifiedComplaint.correct_urgency != models.MisclassifiedComplaint.model_predicted_urgency) |
-            (models.MisclassifiedComplaint.correct_department != models.MisclassifiedComplaint.model_predicted_department)
-        )
+#     results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
+#     return results
 
-    results = query.order_by(models.MisclassifiedComplaint.created_at.desc()).all()
-    return results
 
 # 🔹 GET: Fetch only misclassified urgency complaints
 @router.get("/misclassified/urgency", response_model=list[schemas.MisclassifiedComplaintRead])
@@ -309,10 +318,14 @@ def get_complaints(
         query = query.filter(models.Complaint.urgency == urgency)
     if status is not None:
         query = query.filter(models.Complaint.current_status == status)
-    if district_id is not None:
-        query = query.filter(models.Complaint.district_id == district_id)
-    if municipality_id is not None:
-        query = query.filter(models.Complaint.municipality_id == municipality_id)
+    if municipality_id is not None or district_id is not None:
+        # Join Ward → Municipality → District only if needed
+        query = query.join(models.Complaint.ward).join(models.Ward.municipality)
+        if municipality_id is not None:
+            query = query.filter(models.Municipality.id == municipality_id)
+        if district_id is not None:
+            query = query.join(models.Municipality.district).filter(models.District.id == district_id)
+
     if ward_id is not None:
         query = query.filter(models.Complaint.ward_id == ward_id)
 
