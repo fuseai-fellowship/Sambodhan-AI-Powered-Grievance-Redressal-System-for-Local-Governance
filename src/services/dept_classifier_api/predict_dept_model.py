@@ -4,21 +4,27 @@ import os
 
 class DepartmentPredictor:
     def __init__(self, model_repo="mr-kush/sambodhan-department-classification-model",
-                 cache_dir="/app/model_cache"):
+                 cache_dir="/app/hf_cache"):
         """Load model and tokenizer once at startup."""
-        self.model_repo = model_repo
-        self.cache_dir = cache_dir
 
+        self.model_repo = model_repo
+        self.cache_dir =  cache_dir
+        
         # Ensure cache folder exists
+        
+        os.makedirs(self.cache_dir, exist_ok=True)        
+        if cache_dir is None:
+            cache_dir = os.getenv("HF_HOME", "./hf_cache")
+        self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
 
         # Device selection
         self.device = 0 if torch.cuda.is_available() else -1
 
-        print("🔄 Loading tokenizer and model...")
+        print(" Loading tokenizer and model...")
         # Load tokenizer and model
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_repo, cache_dir=self.cache_dir)
-        self.model = AutoModelForSequenceClassification.from_pretrained(self.model_repo, cache_dir=self.cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_repo, cache_dir=self.cache_dir, force_download=True)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.model_repo, cache_dir=self.cache_dir, force_download=True)
 
         # Create classification pipeline
         self.classifier = pipeline(
@@ -28,7 +34,7 @@ class DepartmentPredictor:
             device=self.device,
             top_k = None
         )
-        print("✅ Model and tokenizer loaded successfully.")
+        print(" Model and tokenizer loaded successfully.")
 
     def predict(self, texts):
         """Predict departments with scores for a single text or a batch."""
