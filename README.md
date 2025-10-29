@@ -8,6 +8,32 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 ---
 
+### Table of contents
+
+- [Features](#features)
+- [Repository Structure](#repository-structure)
+- [Grievance Dataset Schema](#grievance-dataset-schema)
+- [Model Overview](#model-overview)
+  - [System Architecture](#system-architecture)
+  - [1. Department Classification Model](#1-department-classification-model)
+    - [Resources](#resources)
+    - [Quick Start](#quick-start)
+    - [Model Evaluation](#model-evaluation)
+  - [2. Urgency Classification Model](#2-urgency-classification-model)
+    - [Resources](#resources-1)
+    - [Quick Start](#quick-start-1)
+    - [Model Evaluation](#model-evaluation-1)
+- [Continuous Learning System for Sambodhan AI](#continuous-learning-system-for-sambodhan-ai)
+  - [Automated Dataset Preparation](#automated-dataset-preparation)
+  - [Model Retraining Pipeline](#model-retraining-pipeline)
+  - [How Both Pipelines Work Together](#how-both-pipelines-work-together)
+<!-- - [Appendices / Resources](#appendices--resources)
+  - [Docs folder references](#docs-folder-references)
+  - [API / Swagger links](#api--swagger-links) -->
+
+
+---
+
 ## Features
 - Multi-channel grievance submission ( app, website)
 - Automated grievance classification and departmental routing
@@ -79,45 +105,79 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 ---
 
-## Department Classification Model
+## Model Overview
 
-A production-ready transformer-based text classification system for routing citizen grievances to appropriate municipal departments. Deployed as a containerized FastAPI service on HuggingFace Spaces.
+### System Architecture
 
-### Resources
+* **Model Type:** Transformer-based text classification `xlm-roberta-base`
+* **Framework:** Hugging Face Transformers + PyTorch
+* **API Framework:** FastAPI with Pydantic validation
+* **Deployment:** Dockerized services on Hugging Face Spaces
+* **Core Features:** Batch inference, confidence scoring, automated text preprocessing
 
-| Resource | Link | Description |
-|----------|------|-------------|
-| **Model Repository** | [sambodhan_department_classifier](https://huggingface.co/sambodhan/sambodhan_department_classifier) | Pre-trained model weights and configuration |
-| **Live API** | [API Documentation](https://sambodhan-department-classifier.hf.space/docs) | Interactive Swagger UI for testing endpoints |
-| **Deployment & Usage** |[Dept Classifier Docs](docs/department_classifier.md) |Refer to this documentation for detailed API usage, deployment instructions,source code,  and customization options.|
+---
 
-### Quick Start
+### 1. Department Classification Model
+
+A production-ready transformer model that classifies citizen grievances into appropriate municipal departments. Deployed as a containerized FastAPI service on Hugging Face Spaces.
+
+#### Resources
+
+| Resource             | Link                                                                                                | Description                                |
+| -------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Model Repository** | [sambodhan_department_classifier](https://huggingface.co/sambodhan/sambodhan_department_classifier) | Pre-trained weights and configuration      |
+| **Live API**         | [Swagger UI](https://sambodhan-department-classifier.hf.space/docs)                                 | Interactive API documentation              |
+| **Documentation**    | [Department Classifier Docs](docs/department_classifier.md)                                         | Deployment, usage, and customization guide |
+
+#### Quick Start
+
 ```bash
-# Test the live API
 curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
   -H "Content-Type: application/json" \
   -d '{"text": "Where can I get a new water connection?"}'
 ```
 
-### Model Performance
+#### Model Evaluation
 
-**Classification Report:**
-
+**Classification Report**
 ![Classification Report](./results/dept_classifier/dept-classification-report.png)
 
-**Confusion Matrix:**
-
+**Confusion Matrix**
 ![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
 
-### Technical Specifications
+---
 
-- **Architecture**: Transformer-based sequence classification
-- **Framework**: HuggingFace Transformers + PyTorch
-- **API**: FastAPI with Pydantic validation
-- **Deployment**: Docker container on HuggingFace Spaces
-- **Features**: Batch inference, confidence scoring, automatic text preprocessing
+### 2. Urgency Classification Model
+
+A transformer-based classifier that determines the urgency level of citizen grievances. Deployed as a containerized FastAPI service on Hugging Face Spaces.
+
+#### Resources
+
+| Resource             | Link                                                                                          | Description                                |
+| -------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Model Repository** | [sambodhan_urgency_classifier](https://huggingface.co/sambodhan/sambodhan_urgency_classifier) | Pre-trained weights and configuration      |
+| **Live API**         | [Swagger UI](https://sambodhan-urgency-classifier-space.hf.space/docs)                        | Interactive API documentation              |
+| **Documentation**    | [Urgency Classifier Docs](docs/urgency_classifier.md)                                         | Deployment, usage, and customization guide |
+
+#### Quick Start
+
+```bash
+curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The water supply in my area has been cut off for 3 days."}'
+```
+
+#### Model Evaluation
+
+**Classification Report**
+![Classification Report](./results/urgency_classifier/urgency-classification-report.png)
+
+**Confusion Matrix**
+![Confusion Matrix](./results/urgency_classifier/urgency-classifier-confusion-matrix.png)
 
 ---
+
+
 
 ## Continuous Learning System for Sambodhan AI
 
