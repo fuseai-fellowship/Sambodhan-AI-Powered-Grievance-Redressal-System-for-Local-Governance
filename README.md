@@ -264,7 +264,7 @@ flowchart TD
     A["Trigger Retrain<br>(Restart Space)"] --> B["Load Config & Latest Dataset"]
     B --> C["Initialize Model & W&B Run"]
     C --> D["Train with Focal Loss + Early Stopping"]
-    D --> E["Evaluate & Compare F1 (ΔF1)"]
+    D --> E{"Evaluate & Compare F1 (ΔF1)"}
     E -->|Improved| F["Push to HF Hub + Restart Inference Space"]
     E -->|Not Improved| G["Reject Model"]
     F --> H["Pause Retrain Space & Log Results in W&B"]
