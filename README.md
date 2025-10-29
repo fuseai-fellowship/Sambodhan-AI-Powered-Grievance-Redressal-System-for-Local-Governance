@@ -157,7 +157,7 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 
 ```mermaid
 flowchart TD
-    A["<b>TRIGGER</b><br>Restart Automated Prepare Dataset Pipeline"] --> B["Fetch Misclassified + Correct Data"]
+    A["<b>TRIGGER</b><br>Restart Automated Prepare Dataset Pipeline"] --> B["Fetch Misclassified + Correct Data</br> (From SQL Database)"]
     B --> C["Preprocess & Split Dataset"]
     C --> D["Push Versioned Dataset to HF Hub"]
     D --> E["Log to W&B and Auto-Pause Space"]
