@@ -77,3 +77,4 @@ class ClassificationOutput(BaseModel):
     label: str = Field(..., description="Top predicted label")
     confidence: float = Field(..., ge=0, le=1, description="Confidence score")
     scores: Dict[str, float] = Field(..., description="All label confidence scores")
+
