@@ -1,6 +1,4 @@
-# Continuous Learning System for Sambodhan AI
-
-## Architecture for Model Retraining with Hugging Face Spaces & Docker
+# Architecture for Model Retraining with Hugging Face Spaces & Docker
 
 This document outlines a production-ready system for continuously improving the Urgency and Department classification models using real-world feedback, leveraging **Hugging Face Spaces** with **Docker** for automated, on-demand CPU and GPU-based model retraining.
 
