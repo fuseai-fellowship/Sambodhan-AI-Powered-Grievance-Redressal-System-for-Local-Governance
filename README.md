@@ -119,3 +119,58 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 ---
 
+
+## Continuous Learning System for Sambodhan AI
+
+Sambodhan AI uses a **continuous learning system** that automatically improves its **Urgency** and **Department** classification models based on real-world feedback.
+
+
+### Dataset Preperation Pipeline 
+
+
+
+### Model Retraining Pipeline
+Sambodhan implements an automated retraining architecture for continuous model improvement.
+Retraining is executed via Hugging Face Spaces using Dockerized pipelines and tracked through Weights & Biases.
+
+####  Overview
+
+* **Trigger-based retraining**: Each retraining job runs when the **Retrain Space** on Hugging Face is restarted (manually or via API).
+* **Automated pipeline**: Loads the latest dataset, trains with **Focal Loss**, evaluates model performance, and decides whether to deploy the new version.
+* **Safe deployment**: New model is deployed **only if** it outperforms the currently deployed model (based on F1 macro).
+* **Cost-efficient**: Uses **Dockerized Hugging Face Spaces** that automatically **pause after training** to save resources.
+* **Tracking & comparison**: All experiments are tracked in **Weights & Biases**, including training metrics, confusion matrices, and deployment decisions.
+
+####  Architecture Components
+
+| Component           | Purpose                                        |
+| ------------------- | ---------------------------------------------- |
+| **Inference Space** | Serves real-time predictions (always running)  |
+| **Retrain Space**   | Handles automated retraining (on-demand)       |
+| **Dataset Hub**     | Stores version-controlled training data        |
+| **Model Hub**       | Versioned models with metadata and tags        |
+| **WandB**           | Experiment tracking and performance comparison |
+
+####  Retraining Workflow
+
+```mermaid
+flowchart TD
+    A["Trigger Retrain</br>(Restart Space)"] --> B["Load Config & Dataset"]
+    B --> C["Load model & Init W&B"]
+    C --> D["Train Model with Focal Loss & Early Stopping"]
+    D --> E["Evaluate & Compare F1 (ΔF1)"]
+    E -->|Better| F["Push to HF Hub + Restart Inference Space"]
+    E -->|Worse| G["Reject Model"]
+    F --> H["Pause Retrain Space<br> (Free Compute)<br> Log in WandB "]
+    G --> H
+```
+> Fig: Classifier Retraining Piepline
+
+#### Detailed Documentation
+
+For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/retraining_classifier.md ](docs/retraining_classifier.md)**
+
+---
+
+
+

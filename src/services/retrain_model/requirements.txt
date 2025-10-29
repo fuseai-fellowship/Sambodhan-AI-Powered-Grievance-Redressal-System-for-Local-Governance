@@ -1,0 +1,23 @@
+# Core NLP / HF libraries
+transformers[torch]
+datasets>=3.6.0
+huggingface_hub>=0.35.1
+
+# ML / Deep learning stack
+torch>=2.0.0           
+numpy>=1.26.0          
+scikit-learn>=1.3.0
+
+# Data handling & visualization
+pandas>=2.1.0
+matplotlib>=3.8.0
+seaborn>=0.13.2       
+
+# Monitoring & experiment tracking
+wandb>=0.15.0
+
+# Web/API, HTTP
+requests>=2.31.0
+
+
+
