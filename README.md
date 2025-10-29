@@ -119,58 +119,103 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 ---
 
-
 ## Continuous Learning System for Sambodhan AI
 
-Sambodhan AI uses a **continuous learning system** that automatically improves its **Urgency** and **Department** classification models based on real-world feedback.
+Sambodhan AI features a **continuous learning system** that automatically enhances its **Urgency** and **Department** classification models using real-world feedback.
 
+This system consists of two core components:
+1. **Automated Dataset Preparation** 
+2.  **Model Retraining**
 
-### Dataset Preperation Pipeline 
+Both are built on **Hugging Face Spaces** and tracked via **Weights & Biases (W&B)**.
 
+---
 
+### Automated Dataset Preparation
 
-### Model Retraining Pipeline
-Sambodhan implements an automated retraining architecture for continuous model improvement.
-Retraining is executed via Hugging Face Spaces using Dockerized pipelines and tracked through Weights & Biases.
+The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishes new training data for retraining cycles.
 
-####  Overview
+#### Key Highlights
 
-* **Trigger-based retraining**: Each retraining job runs when the **Retrain Space** on Hugging Face is restarted (manually or via API).
-* **Automated pipeline**: Loads the latest dataset, trains with **Focal Loss**, evaluates model performance, and decides whether to deploy the new version.
-* **Safe deployment**: New model is deployed **only if** it outperforms the currently deployed model (based on F1 macro).
-* **Cost-efficient**: Uses **Dockerized Hugging Face Spaces** that automatically **pause after training** to save resources.
-* **Tracking & comparison**: All experiments are tracked in **Weights & Biases**, including training metrics, confusion matrices, and deployment decisions.
+* **Event-driven execution** – triggered whenever the **Prepare Dataset Space** restarts (manual or API).
+* **Database integration** – fetches **misclassified grievances** and balances them with correctly predicted samples.
+* **Data preprocessing** – handles cleaning, encoding, and dataset splitting.
+* **Version control** – pushes versioned datasets to the **Hugging Face Dataset Hub** with timestamped tags.
+* **Experiment tracking** – logs dataset statistics and push status in **W&B**.
+* **Resource-efficient** – the Space auto-pauses after completion to conserve compute.
 
-####  Architecture Components
+#### Components
 
-| Component           | Purpose                                        |
-| ------------------- | ---------------------------------------------- |
-| **Inference Space** | Serves real-time predictions (always running)  |
-| **Retrain Space**   | Handles automated retraining (on-demand)       |
-| **Dataset Hub**     | Stores version-controlled training data        |
-| **Model Hub**       | Versioned models with metadata and tags        |
-| **WandB**           | Experiment tracking and performance comparison |
+| Component                 | Role                                        |
+| ------------------------- | ------------------------------------------- |
+| **Prepare Dataset Space** | Automates data collection and preprocessing |
+| **PostgreSQL Database**   | Stores grievances and feedback samples      |
+| **HF Dataset Hub**        | Hosts version-controlled training datasets  |
+| **Weights & Biases**      | Logs dataset updates and metadata           |
 
-####  Retraining Workflow
+#### Workflow
 
 ```mermaid
 flowchart TD
-    A["Trigger Retrain</br>(Restart Space)"] --> B["Load Config & Dataset"]
-    B --> C["Load model & Init W&B"]
-    C --> D["Train Model with Focal Loss & Early Stopping"]
+    A["Restart Prepare Dataset Space"] --> B["Fetch Misclassified + Correct Data"]
+    B --> C["Preprocess & Split Dataset"]
+    C --> D["Push Versioned Dataset to HF Hub"]
+    D --> E["Log to W&B and Auto-Pause Space"]
+```
+
+**Detailed Guide:** See **[→ docs/prepare_dataset.md ](docs/prepare_dataset.md)**
+ for setup, configuration, and deployment instructions.
+
+---
+
+### Model Retraining Pipeline
+
+The **Retraining Pipeline** ensures Sambodhan’s models continuously improve based on the latest prepared datasets.
+
+#### Key Highlights
+
+* **Automated execution** – runs whenever the **Retrain Space** restarts (manual or API).
+* **End-to-end training** – loads the latest dataset, trains using **Focal Loss**, evaluates, and compares results.
+* **Performance-based deployment** – deploys a new model **only if** it outperforms the current one (by F1-macro).
+* **Containerized runtime** – uses **Dockerized Hugging Face Spaces** that automatically pause after training.
+* **Full traceability** – logs metrics, confusion matrices, and deployment decisions to **W&B**.
+
+#### Components
+
+| Component            | Role                                         |
+| -------------------- | -------------------------------------------- |
+| **Inference Space**  | Hosts and serves the production model        |
+| **Retrain Space**    | Handles training and evaluation runs         |
+| **Dataset Hub**      | Stores version-controlled training data      |
+| **Model Hub**        | Publishes retrained model versions           |
+| **Weights & Biases** | Tracks experiments, results, and comparisons |
+
+#### Workflow
+
+```mermaid
+flowchart TD
+    A["Trigger Retrain<br>(Restart Space)"] --> B["Load Config & Latest Dataset"]
+    B --> C["Initialize Model & W&B Run"]
+    C --> D["Train with Focal Loss + Early Stopping"]
     D --> E["Evaluate & Compare F1 (ΔF1)"]
-    E -->|Better| F["Push to HF Hub + Restart Inference Space"]
-    E -->|Worse| G["Reject Model"]
-    F --> H["Pause Retrain Space<br> (Free Compute)<br> Log in WandB "]
+    E -->|Improved| F["Push to HF Hub + Restart Inference Space"]
+    E -->|Not Improved| G["Reject Model"]
+    F --> H["Pause Retrain Space & Log Results in W&B"]
     G --> H
 ```
-> Fig: Classifier Retraining Piepline
 
-#### Detailed Documentation
-
+**Detailed Guide:** 
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/retraining_classifier.md ](docs/retraining_classifier.md)**
 
 ---
+
+### How Both Pipelines Work Together
+
+The **Dataset Preparation Pipeline** feeds new, cleaned, and versioned data into the **Model Retraining Pipeline**.
+This ensures that Sambodhan AI continuously learns from real-world feedback, maintains high accuracy, and safely deploys improved models with full traceability and minimal manual intervention.
+
+---
+
 
 
 
