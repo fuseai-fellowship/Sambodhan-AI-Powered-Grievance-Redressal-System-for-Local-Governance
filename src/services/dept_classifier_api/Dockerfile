@@ -1,43 +1,21 @@
-
-# 1️ Base Python image
-
 FROM python:3.12-slim
 
 WORKDIR /app
-
-
-# 2️ Copy project files
-
 COPY . /app
 
-
-# 3️ Create writable cache for HF models
-
-RUN mkdir -p /app/model_cache && chmod -R 777 /app/model_cache
-
-ENV HF_HOME=/app/model_cache
-ENV HF_DATASETS_CACHE=/app/model_cache
-ENV HF_METRICS_CACHE=/app/model_cache
-
-
-# 4️ Install dependencies
+# use dedicated cache dir
+ENV HF_HOME=/app/hf_cache
+ENV HF_DATASETS_CACHE=/app/hf_cache
+ENV HF_METRICS_CACHE=/app/hf_cache
+ENV MODEL_REPO=sambodhan/sambodhan_department_classifier
 
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
+# make sure cache dir is writable
+RUN mkdir -p /app/hf_cache && chmod -R 777 /app/hf_cache
 
-# 5️ Preload model to cache (optional, speeds up first request)
-
-RUN python -c "from predict_dept_model import DepartmentPredictor; DepartmentPredictor.load_model()"
-
-
-# 6️ Expose port
 
 EXPOSE 7860
-
-
-# 7️ Start FastAPI
-
-# Uses Hugging Face Spaces PORT if available, otherwise default 7860
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-7860}"]
