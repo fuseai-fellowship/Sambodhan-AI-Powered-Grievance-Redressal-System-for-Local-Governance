@@ -89,7 +89,7 @@ A production-ready transformer-based text classification system for routing citi
 |----------|------|-------------|
 | **Model Repository** | [sambodhan_department_classifier](https://huggingface.co/sambodhan/sambodhan_department_classifier) | Pre-trained model weights and configuration |
 | **Live API** | [API Documentation](https://sambodhan-department-classifier.hf.space/docs) | Interactive Swagger UI for testing endpoints |
-| **Deployment Guide** | [Space Repository](https://huggingface.co/spaces/sambodhan/department_classifier_space) | Complete deployment documentation and source code |
+| **Deployment & Usage** |[Dept Classifier Docs](docs/department_classifier.md) |Refer to this documentation for detailed API usage, deployment instructions,source code,  and customization options.|
 
 ### Quick Start
 ```bash
@@ -116,10 +116,6 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 - **API**: FastAPI with Pydantic validation
 - **Deployment**: Docker container on HuggingFace Spaces
 - **Features**: Batch inference, confidence scoring, automatic text preprocessing
-
-### Usage
-
-For detailed API usage, deployment instructions, and customization options, refer to the [complete documentation](https://huggingface.co/spaces/sambodhan/department_classifier_space).
 
 ---
 
