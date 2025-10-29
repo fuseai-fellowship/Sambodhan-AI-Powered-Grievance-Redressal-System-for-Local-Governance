@@ -137,6 +137,7 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
   -d '{"text": "Where can I get a new water connection?"}'
 ```
 
+<<<<<<< HEAD
 #### Model Evaluation
 
 **Classification Report**
@@ -144,6 +145,18 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 **Confusion Matrix**
 ![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
+=======
+### Model Performance
+
+
+**Classification Report**
+![Classification Report](./results/urgency_classifier/classification_report.png)
+
+**Confusion Matrix**
+![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
+
+---
+>>>>>>> e43dcd7 (fix: update classification report and confusion matrix images for urgency classifier)
 
 ---
 
