@@ -840,5 +840,5 @@ This architecture is production-ready and can scale from prototype to thousands 
 
 **Document Version**: 2.0  
 **Last Updated**: October 29, 2025  
-**Author**: Based on implementation by mr-kush  
+**Author**: Based on implementation by @kushalregmi61
 **Status**: Production-Ready ✅

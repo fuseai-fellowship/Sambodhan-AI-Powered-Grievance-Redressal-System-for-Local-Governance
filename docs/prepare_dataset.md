@@ -790,5 +790,5 @@ This architecture seamlessly integrates with the retraining pipeline to enable c
 
 **Document Version**: 1.0  
 **Last Updated**: October 29, 2025  
-**Author**: Based on implementation by mr-kush  
+**Author**: Based on implementation by @kushalregmi61 
 **Status**: Production-Ready ✅
