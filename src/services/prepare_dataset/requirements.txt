@@ -1,0 +1,9 @@
+sqlalchemy
+pandas
+python-dotenv
+huggingface-hub
+requests
+scikit-learn
+datasets
+psycopg2-binary==2.9.11
+wandb>=0.15.4
