@@ -4,15 +4,25 @@ from typing import Union, List
 from predict_dept_model import DepartmentPredictor
 from contextlib import asynccontextmanager
 from response_schema import ClassificationOutput, TextInput 
+from huggingface_hub import  HfApi
+import os
+
+# Define the model repository ID
+model_repo = os.getenv("MODEL_REPO")
+
+# hf api
+api = HfApi()
 
 
 
 # Setting up startup and shutdown logic
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Load the model 
     global predictor
-    predictor = DepartmentPredictor()
+    predictor = DepartmentPredictor(model_repo= model_repo)
     yield
+    
 
 app = FastAPI(
     title="Sambodhan Department Classifier API",
@@ -39,7 +49,18 @@ def predict_department(input_data: TextInput):
 
 @app.get("/")
 def root():
-    return {"message": "Sambodhan Department Classification API is running."}
+    # Fetch the latest commit hash (revision) from the model repository
+    latest_tag = api.list_repo_refs(repo_id=model_repo, repo_type="model").tags[0].name
+
+    return {
+        "message": "Sambodhan Department Classification API is running.",
+        "status": "Active" if predictor  else "Inactive",
+        "model_version": latest_tag
+    }
+
+
+
+    
 
 # if __name__ == "__main__":
 #     # Important for Hugging Face Spaces (port detection)
