@@ -219,11 +219,16 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 
 ```mermaid
 flowchart TD
-    A["<b>TRIGGER</b><br>Restart Automated Prepare Dataset Pipeline"] --> B["Fetch Misclassified + Correct Data</br> (From SQL Database)"]
-    B --> C["Preprocess & Split Dataset"]
-    C --> D["Push Versioned Dataset to HF Hub"]
-    D --> E["Log to W&B and Auto-Pause Space"]
+    A["<b>TRIGGER</b><br>Restart Automated Prepare Dataset Pipeline"] --> B["Fetch Misclassified + Correct Data<br>(From SQL Database)"]
+    B --> C{"<b>SIZE CHECK</b><br>Records ≥ MIN_DATASET_LEN?"}
+    C -->|Yes| D["Preprocess & Split Dataset"]
+    C -->|No| F["Skip & Log Insufficient Data"]
+    D --> G["Push Versioned Dataset to HF Hub"]
+    G --> H["Log to W&B and Auto-Pause Space"]
+    F --> H
+
 ```
+> Fig: Dataset Preparation Pipeline
 
 **Detailed Guide:** See **[→ docs/prepare_dataset.md ](docs/prepare_dataset.md)**
  for setup, configuration, and deployment instructions.
@@ -265,6 +270,8 @@ flowchart TD
     F --> H["Pause Retrain Space & Log Results in W&B"]
     G --> H
 ```
+
+> Fig: Model Retraining Pipeline
 
 **Detailed Guide:** 
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/retraining_classifier.md ](docs/retraining_classifier.md)**
