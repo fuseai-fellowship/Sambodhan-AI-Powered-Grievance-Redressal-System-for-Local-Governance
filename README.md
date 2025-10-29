@@ -120,9 +120,18 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 ---
 
 
-###  Continuous Learning & Model Retraining
+## Continuous Learning System for Sambodhan AI
 
 Sambodhan AI uses a **continuous learning system** that automatically improves its **Urgency** and **Department** classification models based on real-world feedback.
+
+
+### Dataset Preperation Pipeline 
+
+
+
+### Model Retraining Pipeline
+Sambodhan implements an automated retraining architecture for continuous model improvement.
+Retraining is executed via Hugging Face Spaces using Dockerized pipelines and tracked through Weights & Biases.
 
 ####  Overview
 
