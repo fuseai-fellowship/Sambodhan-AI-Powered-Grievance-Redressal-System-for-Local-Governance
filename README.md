@@ -145,20 +145,9 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 **Confusion Matrix**
 ![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
-=======
-### Model Performance
-
-
-**Classification Report**
-![Classification Report](./results/urgency_classifier/classification_report.png)
-
-**Confusion Matrix**
-![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
 
 ---
->>>>>>> e43dcd7 (fix: update classification report and confusion matrix images for urgency classifier)
 
----
 
 ### 2. Urgency Classification Model
 
@@ -180,16 +169,16 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
   -d '{"text": "The water supply in my area has been cut off for 3 days."}'
 ```
 
-#### Model Evaluation
+### Model Performance
+
 
 **Classification Report**
-![Classification Report](./results/urgency_classifier/urgency-classification-report.png)
+![Classification Report](./results/urgency_classifier/classification_report.png)
 
 **Confusion Matrix**
-![Confusion Matrix](./results/urgency_classifier/urgency-classifier-confusion-matrix.png)
+![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
 
 ---
-
 
 
 ## Continuous Learning System for Sambodhan AI
