@@ -1,8 +1,9 @@
 # for kushal
 other_files/
+.gitignore
+src/
 
-
-
+.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
