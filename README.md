@@ -78,18 +78,48 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 
 ---
+
 ## Department Classification Model
 
->Link to HF-Model repo: [sambodhan-department-classification-model](https://huggingface.co/sambodhan/sambodhan_department_classifier) 
+A production-ready transformer-based text classification system for routing citizen grievances to appropriate municipal departments. Deployed as a containerized FastAPI service on HuggingFace Spaces.
 
-> Live Api on HF Space: [https://mr-kush-sambodhan-department-classifier.hf.space/docs](https://sambodhan-department-classifier.hf.space/docs)
+### Resources
 
-### Result:
+| Resource | Link | Description |
+|----------|------|-------------|
+| **Model Repository** | [sambodhan_department_classifier](https://huggingface.co/sambodhan/sambodhan_department_classifier) | Pre-trained model weights and configuration |
+| **Live API** | [API Documentation](https://sambodhan-department-classifier.hf.space/docs) | Interactive Swagger UI for testing endpoints |
+| **Deployment Guide** | [Space Repository](https://huggingface.co/spaces/sambodhan/department_classifier_space) | Complete deployment documentation and source code |
 
-![classification report](./results/dept_classifier//dept-classification-report.png)
+### Quick Start
+```bash
+# Test the live API
+curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Where can I get a new water connection?"}'
+```
 
-![cofusion matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
+### Model Performance
 
+**Classification Report:**
 
+![Classification Report](./results/dept_classifier/dept-classification-report.png)
 
+**Confusion Matrix:**
+
+![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
+
+### Technical Specifications
+
+- **Architecture**: Transformer-based sequence classification
+- **Framework**: HuggingFace Transformers + PyTorch
+- **API**: FastAPI with Pydantic validation
+- **Deployment**: Docker container on HuggingFace Spaces
+- **Features**: Batch inference, confidence scoring, automatic text preprocessing
+
+### Usage
+
+For detailed API usage, deployment instructions, and customization options, refer to the [complete documentation](https://huggingface.co/spaces/sambodhan/department_classifier_space).
+
+---
 
