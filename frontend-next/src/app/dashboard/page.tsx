@@ -1,83 +1,104 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import apiClient from "@/lib/api-client";
 import DashboardInsights from "@/components/DashboardInsights";
 import FileComplaintForm from './FileComplaintForm';
 
-// Footer from LandingPage
-function DashboardFooter() {
+// Admin Analytics Dashboard Section
+function AdminAnalyticsDashboard() {
+  const [summary, setSummary] = useState<any>(null);
+  const [byUrgency, setByUrgency] = useState<any>(null);
+  const [byDepartment, setByDepartment] = useState<any>(null);
+  const [byStatus, setByStatus] = useState<any>(null);
+  const [byDistrict, setByDistrict] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [summaryRes, urgencyRes, deptRes, statusRes, districtRes] = await Promise.all([
+          apiClient.get('/api/analytics/summary'),
+          apiClient.get('/api/analytics/by-urgency'),
+          apiClient.get('/api/analytics/by-department'),
+          apiClient.get('/api/analytics/by-status'),
+          apiClient.get('/api/analytics/by-district'),
+        ]);
+        setSummary(summaryRes.data);
+        setByUrgency(urgencyRes.data);
+        setByDepartment(deptRes.data);
+        setByStatus(statusRes.data);
+        setByDistrict(districtRes.data);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load analytics');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAnalytics();
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading analytics...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+
   return (
-  <footer className="w-full bg-[#003C88] text-white pt-10 pb-3 border-l-0 border-r-0">
-  <div className="w-full pt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-  <div className="ml-8">
-          <div className="flex items-center gap-2 mb-3">
-            <img src="/nepal-flag.gif" alt="Nepal Flag" className="h-7 w-7 object-contain rounded shadow" />
-            <h3 className="font-semibold text-lg">Citizen Grievance System</h3>
-          </div>
-          <p className="text-gray-200 text-sm leading-relaxed">A modern platform for citizens to voice their concerns and for local governance to respond efficiently.</p>
-  </div>
-        <div className="md:ml-20">
-          <h4 className="font-semibold text-lg mb-3">Contact Information</h4>
-          <ul className="space-y-2 text-sm text-gray-200">
-            <li>
-              <span className="inline-block align-middle mr-1">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                  <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21c1.21.49 2.53.76 3.88.76a1 1 0 011 1v3.5a1 1 0 01-1 1C10.07 22 2 13.93 2 4.5a1 1 0 011-1H6.5a1 1 0 011 1c0 1.35.27 2.67.76 3.88a1 1 0 01-.21 1.11l-2.2 2.2z" />
-                </svg>
-              </span>
-              +977-1-XXXXXXX
-            </li>
-            <li>
-              <span className="inline-block align-middle mr-1">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18">
-                  <rect width="512" height="512" rx="80" fill="#ECEFF1"/>
-                  <polygon points="256,296 32,144 32,432 480,432 480,144" fill="#D32F2F"/>
-                  <polygon points="256,296 32,144 256,296 480,144" fill="#F44336"/>
-                  <polygon points="256,296 32,432 256,296 480,432" fill="#FFFFFF"/>
-                </svg>
-              </span>
-              info@grievance.gov.np
-            </li>
-            <li>
-              <span className="inline-block align-middle mr-1">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18">
-                  <circle cx="256" cy="256" r="256" fill="#D2A4BC"/>
-                  <circle cx="256" cy="342" r="80" fill="#E6E6E6" stroke="#222" strokeWidth="8"/>
-                  <path d="M256 352c-44-80-80-144-80-184a80 80 0 01160 0c0 40-36 104-80 184z" fill="#F44336" stroke="#222" strokeWidth="8"/>
-                  <circle cx="256" cy="172" r="32" fill="#FFF" stroke="#222" strokeWidth="8"/>
-                  <circle cx="256" cy="172" r="16" fill="#F44336" stroke="#222" strokeWidth="8"/>
-                </svg>
-              </span>
-              Kathmandu, Nepal
-            </li>
-          </ul>
-  </div>
-        <div>
-          <h4 className="font-semibold text-lg mb-3">Quick Links</h4>
-          <ul className="space-y-2 text-sm text-gray-200">
-            <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-            <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-            <li><a href="#" className="hover:text-white">Help & Support</a></li>
-            <li><a href="#" className="hover:text-white">Accessibility</a></li>
-          </ul>
-  </div>
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold mb-4">Admin Analytics Dashboard</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">Summary</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(summary, null, 2)}</pre>
+        </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Urgency</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byUrgency, null, 2)}</pre>
+        </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Department</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDepartment, null, 2)}</pre>
+        </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Status</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byStatus, null, 2)}</pre>
+        </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By District</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDistrict, null, 2)}</pre>
+        </div>
       </div>
-      <div className="mt-10 border-t border-gray-400/20 pt-6 text-center text-sm text-gray-300">
-        © 2025 Government of Nepal. All rights reserved.
-      </div>
-    </footer>
+    </div>
   );
 }
+
+// Footer from LandingPage
+// ...existing DashboardFooter code...
 import { User, Clock, CheckCircle2, TrendingUp, FileText, CheckCircle, Info, MapPin, Zap, Wrench, Trash2, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
 
-// Types for dropdowns
-type District = { id: string | number; name: string };
-type Municipality = { id: string | number; name: string };
-type Ward = { id: string | number; ward_number: string | number };
+
+// Main Dashboard Page
+export default function DashboardPage() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+  if (!user) return <div className="p-8 text-center text-red-500">You must be logged in to view the dashboard.</div>;
+
+  // Show admin analytics if user is admin
+  return (
+    <div>
+      {user.role === 'admin' && <AdminAnalyticsDashboard />}
+      {/* ...other dashboard sections for non-admins... */}
+      {/* <DashboardInsights complaints={complaints} /> etc. */}
+      {/* <FileComplaintForm /> etc. */}
+      {/* <DashboardFooter /> */}
+    </div>
+  );
+}
 
 const Dashboard = () => {
   // Get user and logout from AuthContext
