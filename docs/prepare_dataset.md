@@ -15,7 +15,9 @@ This documnetation helps you deploy your own instance of the **Prepare Dataset S
 7. [Quick Start Guide](#quick-start-guide)
 8. [Monitoring & Metrics](#monitoring--metrics)
 9. [Troubleshooting](#troubleshooting)
-
+10. [Integration with Retraining Pipeline](#integration-with-retraining-pipeline)
+11. [Security Considerations](#security-considerations)
+12. [Conclusion](#conclusion)
 ---
 
 ## System Overview
@@ -72,7 +74,7 @@ flowchart TD
     Skip["<b>SKIP</b><br/>Log insufficient data<br/>Continue to next label"]
     class Skip processStyle
     
-    PauseSpace["<b>SHUTDOWN</b><br/>Pause Space<br/>Free resources<br/>Pipeline complete"]
+    PauseSpace["<b>SHUTDOWN</b><br/>SENDS EMAIL</br>Pause Space<br/>Free resources<br/>Pipeline complete"]
     class PauseSpace infraStyle
     
     %% Flow
@@ -706,7 +708,7 @@ Failed to pause HF Space: Space not found
 
 ---
 
-## Integration with Retraining Pipeline
+# Integration with Retraining Pipeline
 
 ### Automatic Workflow
 
@@ -747,7 +749,7 @@ api.restart_space(
 
 ---
 
-## Security Considerations
+# Security Considerations
 
 ### Token Management
 - Use HF tokens with minimum required permissions
@@ -770,7 +772,7 @@ api.restart_space(
 
 ---
 
-## Conclusion
+# Conclusion
 
 This implementation provides a **robust, automated, and scalable** solution for continuous dataset preparation. The key advantages are:
 
