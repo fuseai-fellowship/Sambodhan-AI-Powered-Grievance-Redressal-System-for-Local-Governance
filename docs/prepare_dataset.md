@@ -6,18 +6,79 @@ This documnetation helps you deploy your own instance of the **Prepare Dataset S
 
 ## Table of Contents
 
-1. [System Overview](#system-overview)
-2. [Architecture Components](#architecture-components)
-3. [Pipeline Workflow](#pipeline-workflow)
-4. [Technology Stack](#technology-stack)
-5. [Implementation Details](#implementation-details)
-6. [Deployment Architecture](#deployment-architecture)
-7. [Quick Start Guide](#quick-start-guide)
-8. [Monitoring & Metrics](#monitoring--metrics)
-9. [Troubleshooting](#troubleshooting)
-10. [Integration with Retraining Pipeline](#integration-with-retraining-pipeline)
-11. [Security Considerations](#security-considerations)
-12. [Conclusion](#conclusion)
+- [System Overview](#system-overview)
+  - [Goals](#goals)
+  - [Current Architecture](#current-architecture)
+- [Architecture Components](#architecture-components)
+  - [1. PostgreSQL Database](#1-postgresql-database)
+  - [2. Prepare Dataset Space](#2-prepare-dataset-space)
+  - [3. HF Dataset Hub](#3-hf-dataset-hub)
+  - [4. Weights & Biases](#4-weights--biases)
+- [Pipeline Workflow](#pipeline-workflow)
+  - [Complete End-to-End Process](#complete-end-to-end-process)
+    - [1. TRIGGER](#1-trigger)
+    - [2. LOAD CONFIGURATION](#2-load-configuration)
+    - [3. DATABASE CONNECTION](#3-database-connection)
+    - [4. FETCH DATA (for each label: department, urgency)](#4-fetch-data-for-each-label-department-urgency)
+    - [5. SIZE CHECK](#5-size-check)
+    - [6. PREPROCESS](#6-preprocess)
+    - [7. PUSH TO HUB](#7-push-to-hub)
+    - [8. SHUTDOWN](#8-shutdown)
+- [Technology Stack](#technology-stack)
+  - [Dataset Preparation Pipeline](#dataset-preparation-pipeline)
+    - [Core Framework](#core-framework)
+    - [Key Files](#key-files)
+    - [Docker Setup](#docker-setup)
+  - [Configuration System](#configuration-system)
+    - [Environment Variables](#environment-variables)
+    - [Label Mappings](#label-mappings)
+  - [Data Sampling Strategy](#data-sampling-strategy)
+- [Implementation Details](#implementation-details)
+  - [Key Functions](#key-functions)
+    - [fetch_misclassified_dataframe() (`prepare_pd_df.py`)](#fetch_misclassified_dataframe-prepare_pd_dfpy)
+    - [clean_and_encode_dataset() (`preprocess_and_prepare_dataset.py`)](#clean_and_encode_dataset-preprocess_and_prepare_datasetpy)
+    - [split_dataset() (`preprocess_and_prepare_dataset.py`)](#split_dataset-preprocess_and_prepare_datasetpy)
+    - [preprocess_and_push_dataset() (`preprocess_and_prepare_dataset.py`)](#preprocess_and_push_dataset-preprocess_and_prepare_datasetpy)
+- [Deployment Architecture](#deployment-architecture)
+  - [HF Space Structure](#hf-space-structure)
+  - [Docker Configuration](#docker-configuration)
+  - [Version Control Strategy](#version-control-strategy)
+- [Quick Start Guide](#quick-start-guide)
+  - [Prerequisites](#prerequisites)
+  - [Step 1: Create Dataset Repositories](#step-1-create-dataset-repositories)
+  - [Step 2: Clone the Space](#step-2-clone-the-space)
+  - [Step 3: Initialize as Your Own Space](#step-3-initialize-as-your-own-space)
+  - [Step 4: Set Environment Variables](#step-4-set-environment-variables)
+  - [Step 5: Push to Hub](#step-5-push-to-hub)
+  - [Step 6: Trigger Pipeline](#step-6-trigger-pipeline)
+    - [Option A: Manual Restart (via UI)](#option-a-manual-restart-via-ui)
+    - [Option B: Programmatic Restart](#option-b-programmatic-restart)
+  - [Step 7: Verify Datasets](#step-7-verify-datasets)
+- [Monitoring & Metrics](#monitoring--metrics)
+  - [Weights & Biases Dashboard](#weights--biases-dashboard)
+    - [Logged Metrics](#logged-metrics)
+    - [Alerts](#alerts)
+    - [Dashboard Views](#dashboard-views)
+  - [Space Logs](#space-logs)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+    - [1. Database Connection Fails](#1-database-connection-fails)
+    - [2. Dataset Push Fails](#2-dataset-push-fails)
+    - [3. WandB Login Fails](#3-wandb-login-fails)
+    - [4. Insufficient Data](#4-insufficient-data)
+    - [5. Space Won't Pause](#5-space-wont-pause)
+- [Integration with Retraining Pipeline](#integration-with-retraining-pipeline)
+  - [Automatic Workflow](#automatic-workflow)
+  - [Triggering Retraining After Dataset Update](#triggering-retraining-after-dataset-update)
+  - [End-to-End Monitoring](#end-to-end-monitoring)
+- [Security Considerations](#security-considerations)
+  - [Token Management](#token-management)
+  - [Database Security](#database-security)
+  - [Data Privacy](#data-privacy)
+- [Conclusion](#conclusion)
+  - [Project Links](#project-links)
+- [Docment Metadata](#docment-metadata)
+
 ---
 
 ## System Overview
@@ -121,6 +182,7 @@ flowchart TD
   - Records fetched per label
   - Dataset push status (success/failed/skipped)
   - Pipeline alerts and errors
+- **Notify User** - Send Run Summary Email to Admin 
 
 ---
 
@@ -201,6 +263,7 @@ flowchart TD
 - Log success to WandB
 
 #### **8. SHUTDOWN**
+- WandB Send Email to Notify the Admin 
 - Finish WandB run
 - Pause Space (free resources)
 - Log completion status
@@ -631,7 +694,7 @@ Skipped pushing 'urgency' dataset — insufficient data (450 < 1000).
 
 ### Common Issues
 
-**1. Database Connection Fails**
+#### **1. Database Connection Fails**
 
 **Error:**
 ```
@@ -650,7 +713,7 @@ Database connection failed after multiple attempts.
       conn.exec_driver_sql("SELECT 1")
   ```
 
-**2. Dataset Push Fails**
+#### **2. Dataset Push Fails**
 
 **Error:**
 ```
@@ -663,7 +726,7 @@ Database connection failed after multiple attempts.
 - ✅ Check repository name matches environment variable
 - ✅ Ensure token is not expired
 
-**3. WandB Login Fails**
+#### **3. WandB Login Fails**
 
 **Error:**
 ```
@@ -675,7 +738,7 @@ wandb: ERROR API key is invalid
 - ✅ Get new key from https://wandb.ai/settings
 - ✅ Check WandB service status
 
-**4. Insufficient Data**
+#### **4. Insufficient Data**
 
 **Warning:**
 ```
@@ -694,7 +757,7 @@ Skipped pushing 'department' dataset — insufficient data (450 < 1000).
   )
   ```
 
-**5. Space Won't Pause**
+#### **5. Space Won't Pause**
 
 **Warning:**
 ```
@@ -708,7 +771,7 @@ Failed to pause HF Space: Space not found
 
 ---
 
-# Integration with Retraining Pipeline
+## Integration with Retraining Pipeline
 
 ### Automatic Workflow
 
@@ -749,7 +812,7 @@ api.restart_space(
 
 ---
 
-# Security Considerations
+## Security Considerations
 
 ### Token Management
 - Use HF tokens with minimum required permissions
@@ -772,7 +835,7 @@ api.restart_space(
 
 ---
 
-# Conclusion
+## Conclusion
 
 This implementation provides a **robust, automated, and scalable** solution for continuous dataset preparation. The key advantages are:
 
@@ -789,6 +852,8 @@ This architecture seamlessly integrates with the retraining pipeline to enable c
 - **Template Space**: https://huggingface.co/spaces/sambodhan/prepare_dataset
 
 ---
+
+# Docment Metadata
 
 **Document Version**: 1.0  
 **Last Updated**: October 29, 2025  
