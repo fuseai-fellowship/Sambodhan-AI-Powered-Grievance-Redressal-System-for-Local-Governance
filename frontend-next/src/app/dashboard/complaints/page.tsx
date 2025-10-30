@@ -73,25 +73,18 @@ export default function ComplaintsPage() {
     }
   };
 
-  const getUrgencyBadge = (urgency: number) => {
-    switch (urgency) {
-      case 0:
-        return <span className="text-xs text-gray-600">Low</span>;
-      case 1:
-        return <span className="text-xs text-yellow-600 font-medium">Medium</span>;
-      case 2:
-        return <span className="text-xs text-orange-600 font-semibold">High</span>;
-      case 3:
-        return <span className="text-xs text-red-600 font-bold">Critical</span>;
-      default:
-        return <span className="text-xs text-gray-600">-</span>;
-    }
-  };
+  // Unified urgency labels to match backend and detail page
+  const urgencyLabels = ["Normal", "Urgent", "Highly Urgent"];
+  const getUrgencyLabel = (urgency: number) => urgencyLabels[urgency] || "Unknown";
 
-  const getDepartmentName = (department: number) => {
-    const departments = ['Unclassified', 'Infrastructure', 'Health', 'Education', 'Environment'];
-    return departments[department] || 'Unknown';
-  };
+  // Unified department labels to match backend and detail page
+  const departmentLabels = [
+    'Municipal Governance',
+    'Education, Health & Welfare',
+    'Infrastructure & Utilities',
+    'Security & Law Enforcement'
+  ];
+  const getDepartmentLabel = (department: number) => departmentLabels[department] || 'Unknown';
 
   const filteredComplaints = complaints.filter((complaint) => {
     if (filter === 'all') return true;
@@ -223,22 +216,16 @@ export default function ComplaintsPage() {
                     </span>
                     {getStatusBadge(complaint.current_status)}
                     <span className="text-xs text-gray-500">
-                      {getDepartmentName(complaint.department)}
+                      {getDepartmentLabel(complaint.department)}
                     </span>
                   </div>
                   <p className="text-gray-900 mb-2 line-clamp-2">
                     {complaint.message}
                   </p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                    <span>
-                      Urgency: {getUrgencyBadge(complaint.urgency)}
-                    </span>
-                    {complaint.district_name && (
-                      <span>📍 {complaint.district_name}</span>
-                    )}
-                    <span>
-                      🕒 {new Date(complaint.created_at).toLocaleDateString()}
-                    </span>
+                    <span>Urgency: {getUrgencyLabel(complaint.urgency)}</span>
+                    {complaint.district_name && <span>{complaint.district_name}</span>}
+                    <span>{new Date(complaint.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <Link

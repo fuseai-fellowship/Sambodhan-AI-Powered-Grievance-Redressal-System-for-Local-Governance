@@ -21,8 +21,13 @@ interface Complaint {
 }
 
 const statusLabels = ["Pending", "In Progress", "Resolved", "Rejected"];
-const urgencyLabels = ["Unclassified", "Low", "Medium", "High"];
-const departmentLabels = ["Unclassified", "Infrastructure", "Health", "Education", "Environment"];
+const urgencyLabels = ["Normal", "Urgent", "Highly Urgent"];
+const departmentLabels = [
+  'Municipal Governance',
+  'Education, Health & Welfare',
+  'Infrastructure & Utilities',
+  'Security & Law Enforcement'
+];
 
 export default function ComplaintDetailPage() {
   const router = useRouter();

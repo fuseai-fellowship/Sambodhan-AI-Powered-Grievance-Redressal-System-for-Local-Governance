@@ -1,225 +1,676 @@
-'use client';
+"use client";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import apiClient from "@/lib/api-client";
+import DashboardInsights from "@/components/DashboardInsights";
+import FileComplaintForm from './FileComplaintForm';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import apiClient from '@/lib/api-client';
-import { FileText, Clock, CheckCircle, XCircle, PlusCircle, TrendingUp } from 'lucide-react';
-
-interface Stats {
-  total: number;
-  pending: number;
-  in_progress: number;
-  resolved: number;
-}
-
-interface Complaint {
-  id: number;
-  message: string;
-  status: number;
-  urgency: number;
-  created_at: string;
-}
-
-export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, in_progress: 0, resolved: 0 });
-  const [recentComplaints, setRecentComplaints] = useState<Complaint[]>([]);
+// Admin Analytics Dashboard Section
+function AdminAnalyticsDashboard() {
+  const [summary, setSummary] = useState<any>(null);
+  const [byUrgency, setByUrgency] = useState<any>(null);
+  const [byDepartment, setByDepartment] = useState<any>(null);
+  const [byStatus, setByStatus] = useState<any>(null);
+  const [byDistrict, setByDistrict] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
+    async function fetchAnalytics() {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await apiClient.get('/chatbot/auth/complaints');
-        const complaints = response.data;
-
-        // Calculate stats
-        const stats: Stats = {
-          total: complaints.length,
-          pending: complaints.filter((c: Complaint) => c.status === 0).length,
-          in_progress: complaints.filter((c: Complaint) => c.status === 1).length,
-          resolved: complaints.filter((c: Complaint) => c.status === 2).length,
-        };
-
-        setStats(stats);
-        setRecentComplaints(complaints.slice(0, 5)); // Show 5 most recent
-      } catch (err) {
-        console.error('Failed to load dashboard data:', err);
+        const [summaryRes, urgencyRes, deptRes, statusRes, districtRes] = await Promise.all([
+          apiClient.get('/api/analytics/summary'),
+          apiClient.get('/api/analytics/by-urgency'),
+          apiClient.get('/api/analytics/by-department'),
+          apiClient.get('/api/analytics/by-status'),
+          apiClient.get('/api/analytics/by-district'),
+        ]);
+        setSummary(summaryRes.data);
+        setByUrgency(urgencyRes.data);
+        setByDepartment(deptRes.data);
+        setByStatus(statusRes.data);
+        setByDistrict(districtRes.data);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load analytics');
       } finally {
         setLoading(false);
       }
-    };
-
-    loadDashboardData();
+    }
+    fetchAnalytics();
   }, []);
 
-  const getStatusBadge = (status: number) => {
-    switch (status) {
-      case 0:
-        return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Pending</span>;
-      case 1:
-        return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">In Progress</span>;
-      case 2:
-        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Resolved</span>;
-      case 3:
-        return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Rejected</span>;
-      default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Unknown</span>;
-    }
-  };
-
-  const getUrgencyBadge = (urgency: number) => {
-    switch (urgency) {
-      case 0:
-        return <span className="text-xs text-gray-600">Low</span>;
-      case 1:
-        return <span className="text-xs text-yellow-600 font-medium">Medium</span>;
-      case 2:
-        return <span className="text-xs text-red-600 font-bold">High</span>;
-      default:
-        return <span className="text-xs text-gray-600">-</span>;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading analytics...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Complaints</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
-            </div>
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <FileText className="h-6 w-6 text-indigo-600" />
-            </div>
-          </div>
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold mb-4">Admin Analytics Dashboard</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">Summary</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(summary, null, 2)}</pre>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.pending}</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Urgency</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byUrgency, null, 2)}</pre>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">In Progress</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.in_progress}</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Department</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDepartment, null, 2)}</pre>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Resolved</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.resolved}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By Status</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byStatus, null, 2)}</pre>
         </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-        <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link
-            href="/dashboard/file-complaint"
-            className="flex items-center justify-center px-6 py-3 bg-white text-indigo-600 font-medium rounded-lg hover:bg-indigo-50 transition-colors"
-          >
-            <PlusCircle className="h-5 w-5 mr-2" />
-            File New Complaint
-          </Link>
-          <Link
-            href="/dashboard/complaints"
-            className="flex items-center justify-center px-6 py-3 bg-indigo-700 text-white font-medium rounded-lg hover:bg-indigo-800 transition-colors"
-          >
-            <FileText className="h-5 w-5 mr-2" />
-            View All Complaints
-          </Link>
+        <div className="bg-white rounded-xl border p-5 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2">By District</h3>
+          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDistrict, null, 2)}</pre>
         </div>
-      </div>
-
-      {/* Recent Complaints */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Complaints</h3>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {recentComplaints.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-4">No complaints filed yet</p>
-              <Link
-                href="/dashboard/file-complaint"
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                File Your First Complaint
-              </Link>
-            </div>
-          ) : (
-            recentComplaints.map((complaint) => (
-              <div key={complaint.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {complaint.message.substring(0, 80)}
-                      {complaint.message.length > 80 ? '...' : ''}
-                    </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      {getStatusBadge(complaint.status)}
-                      <span className="text-xs text-gray-500">
-                        Urgency: {getUrgencyBadge(complaint.urgency)}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(complaint.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <Link
-                    href={`/dashboard/complaints/${complaint.id}`}
-                    className="ml-4 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                  >
-                    View
-                  </Link>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        {recentComplaints.length > 0 && (
-          <div className="px-6 py-3 bg-gray-50 text-center">
-            <Link href="/dashboard/complaints" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
-              View all complaints →
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   );
 }
+
+// Footer from LandingPage
+// ...existing DashboardFooter code...
+import { User, Clock, CheckCircle2, TrendingUp, FileText, CheckCircle, Info, MapPin, Zap, Wrench, Trash2, Send } from "lucide-react";
+import { useForm } from "react-hook-form";
+import axios from "axios";
+
+
+
+// Main Dashboard Page
+export default function DashboardPage() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+  if (!user) return <div className="p-8 text-center text-red-500">You must be logged in to view the dashboard.</div>;
+
+  // Show admin analytics if user is admin
+  return (
+    <div>
+      {user.role === 'admin' && <AdminAnalyticsDashboard />}
+      {/* ...other dashboard sections for non-admins... */}
+      {/* <DashboardInsights complaints={complaints} /> etc. */}
+      {/* <FileComplaintForm /> etc. */}
+      {/* <DashboardFooter /> */}
+    </div>
+  );
+}
+
+const Dashboard = () => {
+  // Get user and logout from AuthContext
+  const { user, logout } = useAuth ? useAuth() : { user: null, logout: () => {} };
+  // Loading state for dashboard
+  const [loading, setLoading] = useState(false);
+  // Auth error state for login/session issues
+  const [authError, setAuthError] = useState("");
+  // Location dropdown states for grievance form
+  const [loadingDistricts, setLoadingDistricts] = useState(true);
+  const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+
+  // Add react-hook-form for grievance submission (must be before any use of watch)
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({});
+
+  // Sync selected district/municipality with form values
+  const selectedDistrictId = watch('district_id');
+  const selectedMunicipalityId = watch('municipality_id');
+
+  // Load districts on mount
+  useEffect(() => {
+    setLoadingDistricts(true);
+    apiClient.get('/locations/districts/')
+      .then(res => setDistricts(res.data))
+      .catch(() => setDistricts([]))
+      .finally(() => setLoadingDistricts(false));
+  }, []);
+
+  // Load municipalities when district changes
+  useEffect(() => {
+    if (selectedDistrictId) {
+      setLoadingMunicipalities(true);
+      apiClient.get(`/locations/municipalities/?district_id=${selectedDistrictId}`)
+        .then(res => setMunicipalities(res.data))
+        .catch(() => setMunicipalities([]))
+        .finally(() => setLoadingMunicipalities(false));
+    } else {
+      setMunicipalities([]);
+      setWards([]);
+    }
+  }, [selectedDistrictId]);
+
+  // Load wards when municipality changes
+  useEffect(() => {
+    if (selectedMunicipalityId) {
+      setLoadingWards(true);
+      apiClient.get(`/locations/wards/?municipality_id=${selectedMunicipalityId}`)
+        .then(res => setWards(res.data))
+        .catch(() => setWards([]))
+        .finally(() => setLoadingWards(false));
+    } else {
+      setWards([]);
+    }
+  }, [selectedMunicipalityId]);
+  // Add react-hook-form for grievance submission
+
+  // Grievance form submission handler
+  const onSubmit = async (data: any) => {
+    setLoadingForm(true);
+    setError('');
+    setSuccess('');
+    try {
+      // 1. Call HuggingFace API for urgency classification
+      const urgencyRes = await fetch('https://kar137-sambodhan-urgency-classifier-space.hf.space/predict_urgency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: data.description })
+      });
+      const urgencyData = await urgencyRes.json();
+      const urgency = urgencyData?.label || 'unknown';
+
+      // 2. Call HuggingFace API for department classification
+      const deptRes = await fetch('https://mr-kush-sambodhan-department-classifier.hf.space/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: data.description })
+      });
+      const deptData = await deptRes.json();
+      const department = deptData?.label || 'unknown';
+
+      // 3. Build FormData payload including all fields, urgency, department, and file
+      const payload = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === 'file' && value && (value as FileList).length > 0) {
+          payload.append('file', (value as FileList)[0]);
+        } else if (value !== null && value !== undefined) {
+          payload.append(key, value as string);
+        }
+      });
+      payload.append('urgency', urgency);
+      payload.append('department', department);
+
+      // 4. Send to backend/database
+      await apiClient.post('/chatbot/auth/complaints', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSuccess('Grievance submitted successfully!');
+      setShowConfirm(false);
+    } catch (err) {
+      setError('Failed to submit grievance. Please try again.');
+    } finally {
+      setLoadingForm(false);
+    }
+  };
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  // Enhanced grievance form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    ward_id: '',
+    location: '',
+    phone: '+977-9841234567',
+    category: '',
+    file: undefined as FileList | undefined,
+  });
+  type Category = { id: number; name: string };
+  type Ward = { id: number; ward_number: number };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [loadingForm, setLoadingForm] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const fileInputRef = useRef(null);
+  type Complaint = {
+    id: number;
+    status_name: string;
+    [key: string]: any;
+  };
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    resolved: 0,
+    active: 0,
+    avgResolution: 0,
+  });
+  // Dropdown states
+  const [districts, setDistricts] = useState([]);
+  const [municipalities, setMunicipalities] = useState([]);
+  const [wards, setWards] = useState([]);
+
+  // Load categories and wards (simulate API)
+  useEffect(() => {
+  apiClient.get('/chatbot/departments').then(res => setCategories(res.data)).catch(() => setCategories([]));
+    apiClient.get('/locations/wards/').then(res => setWards(res.data)).catch(() => setWards([]));
+  }, []);
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, files } = e.target as HTMLInputElement;
+    setFormData(prev => ({
+      ...prev,
+      [name]: files ? files : value
+    }));
+  };
+
+
+  const handleFormPreview = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setShowConfirm(true);
+  };
+
+
+  const handleFormSubmit = async () => {
+    setLoadingForm(true);
+    setError('');
+    setSuccess('');
+    try {
+      const payload = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'file' && value && (value as FileList).length > 0) {
+          payload.append('file', (value as FileList)[0]);
+        } else if (key === 'ward_id' && value) {
+          payload.append('ward_id', String(value));
+        } else if (value !== null && value !== undefined) {
+          payload.append(key, value as string);
+        }
+      });
+      await apiClient.post('/chatbot/auth/complaints', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSuccess('Grievance submitted successfully!');
+  setFormData({ title: '', description: '', ward_id: '', location: '', phone: '+977-9841234567', category: '', file: undefined });
+      setShowConfirm(false);
+    } catch (err) {
+      setError('Failed to submit grievance. Please try again.');
+    } finally {
+      setLoadingForm(false);
+    }
+  };
+    // if (loading) return;
+    // if (!user) {
+    //   setAuthError("You are not logged in. Please login to view your dashboard.");
+    //   return;
+    // }
+    // Fetch complaints only once on mount
+    useEffect(() => {
+      apiClient.get("/chatbot/auth/complaints")
+        .then(res => {
+          setComplaints(res.data);
+          // Calculate stats
+          const total = res.data.length;
+          const resolved = res.data.filter((c: Complaint) => c.status_name === "Resolved").length;
+          const active = res.data.filter((c: Complaint) => c.status_name === "In Progress").length;
+          setStats({
+            total,
+            resolved,
+            active,
+            avgResolution: 6.5, // Replace with actual calculation
+          });
+        })
+        .catch(err => {
+          if (err.response?.status === 401) {
+            setAuthError("Session expired or unauthorized. Please login again.");
+          }
+        });
+    }, []);
+  // ...existing code...
+
+  const cards = [
+    {
+      icon: <FileText className="w-6 h-6 text-gray-500" />,
+      title: "Total Submissions",
+      value: stats.total,
+      subtitle: "All time",
+      valueColor: "text-red-600",
+    },
+    {
+      icon: <CheckCircle2 className="w-6 h-6 text-gray-500" />,
+      title: "Resolved",
+      value: stats.resolved,
+      subtitle: `${Math.round((stats.resolved / (stats.total || 1)) * 100)}% success rate`,
+      valueColor: "text-green-600",
+    },
+    {
+      icon: <Clock className="w-6 h-6 text-gray-500" />,
+      title: "Active Cases",
+      value: stats.active,
+      subtitle: "In progress",
+      valueColor: "text-blue-600",
+    },
+    {
+      icon: <TrendingUp className="w-6 h-6 text-gray-500" />,
+      title: "Avg. Resolution",
+      value: `${stats.avgResolution} days`,
+      subtitle: "Better than average",
+      valueColor: "text-green-600",
+    },
+  ];
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-inter">
+        <div className="bg-white rounded-xl border p-8 shadow-md">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Authentication Error</h2>
+          <p className="text-gray-700 mb-4">{authError}</p>
+          <a href="/auth/login" className="text-blue-600 underline font-semibold">Go to Login</a>
+  </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-inter">
+        <span className="text-lg text-gray-700">Loading...</span>
+      </div>
+    );
+  }
+
+  // Helper components for new sections
+  const StatusBadge = ({ status }: { status: string }) => {
+    const styles: Record<string, string> = {
+      Resolved: "bg-green-100 text-green-700",
+      "In Progress": "bg-blue-100 text-blue-700",
+      Pending: "bg-yellow-100 text-yellow-700",
+    };
+    return (
+      <span className={`text-xs font-medium px-2 py-1 rounded-md ${styles[status]}`}>{status}</span>
+    );
+  };
+
+  const PriorityBadge = ({ priority }: { priority: string }) => {
+    const colors: Record<string, string> = {
+      High: "bg-red-600",
+      Medium: "bg-blue-900",
+    };
+    return (
+      <span className={`text-white text-xs font-semibold px-3 py-1 rounded-md ${colors[priority]}`}>
+        {priority}
+      </span>
+    );
+  };
+
+  const icons: Record<string, React.ReactNode> = {
+    Electricity: <Zap className="w-4 h-4" />,
+    Infrastructure: <Wrench className="w-4 h-4" />,
+    Sanitation: <Trash2 className="w-4 h-4" />,
+  };
+
+  // Map real complaints to grievance cards (fallback to demo if none)
+  const grievanceCards = (complaints.length > 0 ? complaints.slice(0, 3) : [
+    {
+      id: "GRV-2025-001",
+      title: "Street Light Not Working",
+      date: "2025-10-15",
+      ward: "Ward 12, Thamel",
+      category: "Electricity",
+      status: "Resolved",
+      priority: "Medium",
+    },
+    {
+      id: "GRV-2025-045",
+      title: "Road Repair Needed",
+      date: "2025-10-20",
+      ward: "Ward 12, Main Road",
+      category: "Infrastructure",
+      status: "In Progress",
+      priority: "High",
+    },
+    {
+      id: "GRV-2025-062",
+      title: "Garbage Collection Delay",
+      date: "2025-10-25",
+      ward: "Ward 12, Residential Area",
+      category: "Sanitation",
+      status: "Pending",
+      priority: "Medium",
+    },
+  ]).map((g, idx) => (
+    <div key={g.id || idx} className="flex justify-between items-center border rounded-xl p-4 hover:shadow-md transition bg-white">
+      <div>
+        <h3 className="font-medium text-gray-900">{g.title}</h3>
+        <p className="text-sm text-gray-500">{g.id} • {g.date}</p>
+        <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+          <MapPin className="w-4 h-4" /> {g.ward}
+          <span className="flex items-center gap-1 ml-3">{icons[g.category] || null} {g.category}</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <StatusBadge status={g.status} />
+        <PriorityBadge priority={g.priority} />
+      </div>
+    </div>
+  ));
+
+  // Community updates (static for now)
+  const updates = [
+    {
+      type: "success",
+      title: "Ward 12 - Road Maintenance Completed",
+      desc: "Major road maintenance work completed on Main Road.",
+      date: "2025-10-25",
+    },
+    {
+      type: "info",
+      title: "New Waste Collection Schedule",
+      desc: "Updated schedule: Monday, Wednesday, Friday - 6:00 AM",
+    },
+  ];
+
+  return (
+  <div className="min-h-screen bg-gray-50 font-inter w-full">
+      {/* Navbar from Landing Page, but with only required content */}
+  <nav className="w-full flex justify-between items-center px-8 py-2 shadow-sm bg-white/70 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300">
+        <div className="flex items-center gap-3">
+          <img
+            src="/nepal-flag.gif"
+            alt="Nepal Flag"
+            className="h-10 w-10 object-contain rounded shadow-[0_0_4px_#e5e7eb]"
+          />
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-red-700 leading-tight">
+              नागरिक गुनासो व्यवस्थापन
+            </span>
+            <span className="text-sm text-blue-700">Citizen Grievance System</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <User className="w-5 h-5 text-gray-700" />
+          <span className="text-base font-semibold text-gray-700">{user?.name || "User"}</span>
+          <button
+            onClick={logout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md font-medium transition"
+            title="Logout"
+          >
+            Logout
+          </button>
+        </div>
+      </nav>
+
+      {/* Welcome Section */}
+  <main className="w-full px-10 py-8">
+        <div className="mb-2">
+          <span className="block text-lg font-semibold text-red-700">Welcome, {user?.name || "User"}!</span>
+        </div>
+        <p className="text-gray-600 mt-1">
+          Track, submit, and manage your grievances efficiently
+        </p>
+
+        {/* Stats Cards */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {cards.map((card, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-xl border p-5 shadow-sm hover:shadow-md transition"
+            >
+              <div className="flex items-center space-x-3">
+                {card.icon}
+                <p className="text-gray-700 font-medium">{card.title}</p>
+              </div>
+              <div className={`mt-3 text-2xl font-semibold ${card.valueColor}`}>{card.value}</div>
+              <p className="text-sm text-gray-500 mt-1">{card.subtitle}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mt-10 flex flex-wrap gap-2">
+          {["Dashboard", "My Grievances", "Submit Grievance", "Community", "Support"].map(
+            (tab, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveTab(tab)}
+                className={`border rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition ${
+                  activeTab === tab
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-8">
+          {activeTab === "Dashboard" && (
+            <>
+              <DashboardInsights complaints={complaints} />
+              {/* Recent Grievances Section */}
+              <section className="bg-white p-6 rounded-xl shadow-sm border mt-12">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="font-semibold text-lg text-gray-800">Recent Grievances</h2>
+                    <p className="text-sm text-gray-500">Your latest submissions</p>
+                  </div>
+                  <button className="text-sm text-blue-600 font-medium hover:underline">View All</button>
+                </div>
+                <div className="space-y-4">
+                  {grievanceCards}
+                </div>
+              </section>
+            </>
+          )}
+          {activeTab === "My Grievances" && (
+            <div className="bg-white p-8 rounded-xl shadow-sm border mt-8">
+              <h2 className="font-semibold text-lg text-gray-800 mb-2">My Grievances</h2>
+              <p className="text-gray-600 mb-6">List and manage your submitted grievances here.</p>
+              {loading ? (
+                <div className="py-8 text-center text-gray-500">Loading grievances...</div>
+              ) : complaints.length === 0 ? (
+                <div className="py-8 text-center text-gray-400">No grievances submitted yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {complaints.map((g) => {
+                    // Map status code to label
+                    const statusMap: Record<string | number, string> = {
+                      0: 'Pending',
+                      1: 'In Progress',
+                      2: 'Resolved',
+                      3: 'Rejected',
+                      'Pending': 'Pending',
+                      'In Progress': 'In Progress',
+                      'Resolved': 'Resolved',
+                      'Rejected': 'Rejected',
+                    };
+                    // Try all possible status fields
+                    let statusLabel = statusMap[g.current_status];
+                    if (!statusLabel && g.status_name) statusLabel = statusMap[g.status_name] || g.status_name;
+                    if (!statusLabel && typeof g.status === 'number') statusLabel = statusMap[g.status];
+                    if (!statusLabel && typeof g.status === 'string') statusLabel = statusMap[g.status] || g.status;
+                    if (!statusLabel) statusLabel = 'Pending';
+
+                    // Ward display: handle missing, zero, or string cases
+                    let wardDisplay = '-';
+                    if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
+                      const wNum = g.ward.ward_number;
+                      if (typeof wNum === 'number' && wNum > 0) wardDisplay = `Ward ${wNum}`;
+                      else if (typeof wNum === 'string' && wNum.trim() !== '' && wNum !== '0') wardDisplay = `Ward ${wNum}`;
+                    } else if (g.ward_number && g.ward_number !== '0' && g.ward_number !== 0) {
+                      wardDisplay = `Ward ${g.ward_number}`;
+                    }
+
+                    return (
+                      <div key={g.id} className="flex flex-col justify-between border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-xs font-semibold text-gray-500">ID: {g.id}</span>
+                          <span className="text-xs text-gray-400">{new Date(g.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="inline-block text-sm font-medium text-blue-700 mr-2">{g.department}</span>
+                          <span className={`inline-block text-xs font-semibold px-2 py-1 rounded ${g.urgency === 'HIGHLY URGENT' ? 'bg-red-100 text-red-700' : g.urgency === 'URGENT' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{g.urgency}</span>
+                        </div>
+                        <div className="mb-2 text-sm text-gray-700">
+                          <span className="font-semibold">Ward:</span> {wardDisplay}
+                        </div>
+                        <div className="mb-2 text-sm text-gray-700">
+                          <span className="font-semibold">Status:</span> <span className={`px-2 py-1 rounded text-xs font-medium ${statusLabel === 'Resolved' ? 'bg-green-100 text-green-700' : statusLabel === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{statusLabel}</span>
+                        </div>
+                        <div className="mb-2 text-sm text-gray-600">
+                          <span className="font-semibold">Message:</span> {g.message.length > 80 ? g.message.slice(0, 80) + '...' : g.message}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs font-medium transition" title="View Details">View</button>
+                          <button className="bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1 rounded text-xs font-medium transition" title="Delete">Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === "Submit Grievance" && (
+            <div className="max-w-3xl mx-auto">
+              <FileComplaintForm />
+            </div>
+          )}
+          {activeTab === "Community" && (
+            <section className="bg-white p-6 rounded-xl shadow-sm border mt-8">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="w-5 h-5 text-gray-600" />
+                <h2 className="font-semibold text-gray-800 text-lg">Community Updates</h2>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">Latest news from Ward 12</p>
+              <div className="space-y-5">
+                {updates.map((u, i) => (
+                  <div key={i} className="flex items-start gap-3 border-t pt-3 first:border-t-0 first:pt-0">
+                    {u.type === "success" ? (
+                      <CheckCircle className="text-green-600 w-5 h-5 mt-0.5" />
+                    ) : (
+                      <Info className="text-blue-500 w-5 h-5 mt-0.5" />
+                    )}
+                    <div>
+                      <h3 className="font-medium text-gray-800">{u.title}</h3>
+                      <p className="text-sm text-gray-600">{u.desc}</p>
+                      {u.date && <p className="text-xs text-gray-400 mt-1">{u.date}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {activeTab === "Support" && (
+            <div className="bg-white p-8 rounded-xl shadow-sm border mt-8">
+              <h2 className="font-semibold text-lg text-gray-800 mb-2">Support</h2>
+              <p className="text-gray-600">Contact support or find help resources here.</p>
+              {/* TODO: Add support/help content */}
+            </div>
+          )}
+        </div>
+      </main>
+      <DashboardFooter />
+    </div>
+  );
+};
+
+export default Dashboard;
+

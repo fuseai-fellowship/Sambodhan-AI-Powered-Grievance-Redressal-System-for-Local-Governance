@@ -9,6 +9,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState([
     { sender: "bot", text: "Hi! How can I help you today?" }
   ]);
+  const [context, setContext] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatRef = React.useRef<HTMLDivElement>(null);
@@ -31,8 +32,8 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
     const userMessage = input;
     setInput("");
     try {
-      // Send to correct backend endpoint and include user info if available
-      const payload: any = { message: userMessage };
+      // Always send context with every message
+      const payload: any = { message: userMessage, context };
       if (user) {
         payload.user_id = user.id;
         payload.user_name = user.name;
@@ -41,6 +42,10 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
       }
       const res = await apiClient.post("/chatbot/message", payload);
       setMessages(msgs => [...msgs, { sender: "bot", text: res.data.reply }]);
+      // Update context from bot reply if present
+      if (res.data?.data?.context) {
+        setContext(res.data.data.context);
+      }
     } catch (err: any) {
       setMessages(msgs => [...msgs, { sender: "bot", text: "Sorry, I couldn't process your request. Please try again." }]);
       setError("Failed to get response from chatbot.");
@@ -52,7 +57,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
       {/* Only the chatbot window is interactive, no overlay */}
-  <div className="absolute bottom-6 left-6 w-full max-w-md rounded-2xl shadow-2xl bg-linear-to-br from-indigo-700 to-purple-800 border-2 border-indigo-400 animate-fade-in-up pointer-events-auto">
+      <div className="absolute bottom-6 right-6 w-full max-w-md rounded-2xl shadow-2xl bg-linear-to-br from-indigo-700 to-purple-800 border-2 border-indigo-400 animate-fade-in-up pointer-events-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-indigo-300 bg-indigo-800 rounded-t-2xl">
           <span className="text-lg font-semibold text-white">Sambodhan AI Chatbot</span>
           <button onClick={onClose} className="text-indigo-200 hover:text-white transition-colors p-1 rounded-full hover:bg-indigo-600" title="Close Chatbot" aria-label="Close Chatbot">
@@ -129,154 +134,35 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatbotOpen, setChatbotOpen] = useState(false);
-
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Complaints', href: '/dashboard/complaints', icon: FileText },
-    { name: 'File Complaint', href: '/dashboard/file-complaint', icon: PlusCircle },
-    { name: 'Profile', href: '/dashboard/profile', icon: User },
-  ];
-
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Mobile sidebar backdrop */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
+        {/* Main Content Only */}
+        <main className="py-6 px-4 sm:px-6 lg:px-8">
+          {children}
+        </main>
+
+        {/* Chatbot - Fixed bottom-left corner */}
+        {!chatbotOpen && (
+          <div className={chatbotTriggerStyles.chatbotTriggerExtremeBottomLeft}>
+            <button
+              className="transition-all duration-300 hover:scale-110 focus:outline-none border-0 bg-transparent p-0 m-0"
+              title="Open Chatbot"
+              aria-label="Open Chatbot"
+              style={{ width: 84, height: 84, boxShadow: 'none', borderRadius: 0, background: 'none' }}
+              onClick={() => setChatbotOpen(true)}
+            >
+              {/* 3D Robot AI Assistant Icon - no circle, fills area */}
+              <div style={{ width: 140, height: 140, pointerEvents: 'none' }}>
+                {/* Dynamically import Robot3DViewer as before */}
+                {require('next/dynamic')(() => import('@/components/Robot3DViewer'), { ssr: false })({ width: 140, height: 140 })}
+              </div>
+            </button>
+          </div>
         )}
-
-        {/* Sidebar */}
-        <div
-          className={`fixed inset-y-0 left-0 z-30 w-64 bg-linear-to-b from-indigo-700 to-indigo-900 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-16 px-6 bg-indigo-800 border-b border-indigo-600">
-            <h1 className="text-xl font-bold text-white">Sambodhan</h1>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-white hover:text-indigo-200"
-              title="Close sidebar"
-              aria-label="Close sidebar"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
-          {/* User Info */}
-          <div className="p-6 border-b border-indigo-600">
-            <div className="flex items-center space-x-3">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.name || 'User'}
-                </p>
-                <p className="text-xs text-indigo-200 truncate">
-                  {user?.email || ''}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-indigo-800 text-white'
-                      : 'text-indigo-100 hover:bg-indigo-800 hover:text-white'
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Logout Button */}
-          <div className="p-4 border-t border-indigo-600">
-            <button
-              onClick={handleLogout}
-              className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-indigo-100 rounded-lg hover:bg-indigo-800 hover:text-white transition-colors"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="lg:pl-64">
-          {/* Top Bar */}
-          <div className="sticky top-0 z-10 flex h-16 bg-white border-b border-gray-200 shadow-sm">
-            <button
-              type="button"
-              className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <div className="flex-1 flex justify-between items-center px-4 sm:px-6 lg:px-8">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {navigation.find((item) => item.href === pathname)?.name || 'Dashboard'}
-              </h2>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Welcome, <span className="font-medium">{user?.name}</span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Page Content */}
-          <main className="py-6 px-4 sm:px-6 lg:px-8">
-            {children}
-          </main>
-        </div>
-
-  {/* Chatbot - Fixed bottom-left corner */}
-  {!chatbotOpen && (
-    <div className={chatbotTriggerStyles.chatbotTriggerExtremeBottomLeft}>
-      <button
-        className="transition-all duration-300 hover:scale-110 focus:outline-none border-0 bg-transparent p-0 m-0"
-        title="Open Chatbot"
-        aria-label="Open Chatbot"
-        style={{ width: 84, height: 84, boxShadow: 'none', borderRadius: 0, background: 'none' }}
-        onClick={() => setChatbotOpen(true)}
-      >
-        {/* 3D Robot AI Assistant Icon - no circle, fills area */}
-        <div style={{ width: 140, height: 140, pointerEvents: 'none' }}>
-          <Robot3DViewer width={140} height={140} />
-        </div>
-      </button>
-    </div>
-  )}
-  {chatbotOpen && <ChatbotModal onClose={() => setChatbotOpen(false)} />}
+        {chatbotOpen && <ChatbotModal onClose={() => setChatbotOpen(false)} />}
       </div>
     </ProtectedRoute>
   );
