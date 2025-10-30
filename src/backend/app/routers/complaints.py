@@ -101,7 +101,24 @@ async def create_complaint(
             raise HTTPException(status_code=400, detail="Citizen with this ID does not exist")
 
     complaint_data = complaint.model_dump()
-
+    # Remove any nested ward object if present (defensive)
+    if "ward" in complaint_data:
+        complaint_data.pop("ward")
+    # Debug log incoming payload
+    print("[DEBUG] Incoming complaint_data:", complaint_data)
+    # Extra debug logging for ward_id
+    ward_id_val = complaint_data.get("ward_id")
+    print(f"[DEBUG] ward_id received: {ward_id_val} (type: {type(ward_id_val)})")
+    if ward_id_val is not None:
+        ward_exists = db.query(models.Ward).filter(models.Ward.id == ward_id_val).first() is not None
+        print(f"[DEBUG] ward_id exists in DB: {ward_exists}")
+    # Always set ward_id from payload if present
+    if hasattr(complaint, "ward_id") and complaint.ward_id is not None:
+        # Strict validation: ensure ward_id exists
+        ward_obj = db.query(models.Ward).filter(models.Ward.id == complaint.ward_id).first()
+        if not ward_obj:
+            raise HTTPException(status_code=400, detail=f"Ward ID {complaint.ward_id} does not exist.")
+        complaint_data["ward_id"] = complaint.ward_id
     # ✅ Auto-assign ward_id from citizen if not provided
     if complaint_data.get("ward_id") is None and user is not None:
         complaint_data["ward_id"] = user.ward_id
@@ -112,20 +129,25 @@ async def create_complaint(
     
     # ✅ ML classification
     try:
-        urgency_result = await predict_urgency(complaint.message)
-        department_result = await predict_department(complaint.message)
+        # Use urgency from frontend if provided, else run classifier
+        if complaint.urgency:
+            complaint_data["urgency"] = complaint.urgency
+        else:
+            urgency_result = await predict_urgency(complaint.message)
+            complaint_data["urgency"] = resolve_label(urgency_result["urgency"], URGENCY_LABEL_MAP)
 
-        print(f"ML Classification: urgency={urgency_result['urgency']}, department={department_result['department']}")
-
-        # Convert predicted numeric values to string labels before saving
-        complaint_data["urgency"] = resolve_label(urgency_result["urgency"], URGENCY_LABEL_MAP)
-        complaint_data["department"] = resolve_label(department_result["department"], DEPARTMENT_LABEL_MAP)
+        # Use department from frontend if provided, else run classifier
+        if complaint.department:
+            complaint_data["department"] = complaint.department
+        else:
+            department_result = await predict_department(complaint.message)
+            complaint_data["department"] = resolve_label(department_result["department"], DEPARTMENT_LABEL_MAP)
 
     except Exception as e:
         print(f"ML classification failed, using defaults: {str(e)}")
         # fallback if prediction fails
-        complaint_data["urgency"] = resolve_label(complaint.urgency, URGENCY_LABEL_MAP)
-        complaint_data["department"] = resolve_label(complaint.department, DEPARTMENT_LABEL_MAP)
+        complaint_data["urgency"] = complaint.urgency or resolve_label(0, URGENCY_LABEL_MAP)
+        complaint_data["department"] = complaint.department or resolve_label(0, DEPARTMENT_LABEL_MAP)
 
     # ✅ Save to DB
     db_complaint = models.Complaint(**complaint_data)

@@ -35,6 +35,8 @@ class ComplaintCreate(ComplaintBase):
     citizen_id: Optional[int] = None
     ward_id: int | None = None
     date_submitted: Optional[datetime] = None 
+    urgency: Optional[Union[int, str]] = None
+    department: Optional[Union[int, str]] = None
 
 
 class ComplaintUpdate(BaseModel):
@@ -61,7 +63,7 @@ class ComplaintRead(BaseModel):
     current_status: Optional[str] = None
     message: str
     # message_processed: Optional[str] = None
-    # ward_id: Optional[int] = None
+    ward_id: Optional[int] = None
     ward: WardRead | None = None
     date_submitted: datetime
     created_at: datetime

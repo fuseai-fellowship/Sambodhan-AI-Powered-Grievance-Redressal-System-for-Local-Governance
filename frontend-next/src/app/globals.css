@@ -1,3 +1,7 @@
+/* Custom hero section border color */
+.bg-hero-border {
+  background-color: #D1153E;
+}
 @import "tailwindcss";
 
 :root {
