@@ -19,7 +19,8 @@ from app.core.database import get_db
 from app.routers.complaints import predict_urgency, predict_department, DEPARTMENT_API_BASE, CLASSIFIER_TIMEOUT_SECONDS
 import httpx
 import os
-import jwt
+from jose import jwt
+from jose.exceptions import JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
 
 # Password hashing setup
@@ -34,7 +35,7 @@ from datetime import datetime, timedelta
 # --- Constants (define safe defaults for now) ---
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 ALGORITHM = "HS256"
-SECRET_KEY = "dev-secret-key"
+SECRET_KEY = "your-very-secret-key"
 STATUS_NAMES = {
     0: "Pending",
     1: "In Progress",
@@ -446,7 +447,7 @@ async def get_current_user(
     try:
         token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id_str: str = payload.get("sub")
+        user_id_str = payload.get("sub")
         if user_id_str is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -459,12 +460,12 @@ async def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token - invalid user ID format"
             )
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired"
         )
-    except jwt.InvalidTokenError as e:
+    except JWTError as e:
         print(f"JWT decode error: {str(e)}")  # Debug logging
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
