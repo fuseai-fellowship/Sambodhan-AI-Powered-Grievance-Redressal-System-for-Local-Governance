@@ -297,13 +297,17 @@ def update_complaint(complaint_id: int, updated: schemas.ComplaintUpdate, db: Se
         raise HTTPException(status_code=404, detail="Complaint not found")
 
     update_data = updated.model_dump(exclude_unset=True)
+    # Convert integer status to string label if present
+    if "current_status" in update_data and isinstance(update_data["current_status"], int):
+        from app.schemas.complaint import STATUS_LABEL_MAP
+        update_data["current_status"] = STATUS_LABEL_MAP.get(update_data["current_status"], "PENDING")
     for key, value in update_data.items():
         setattr(db_complaint, key, value)
 
     db.commit()
     db.refresh(db_complaint)
 
-    return db_complaint
+    return {"success": True, "id": db_complaint.id, "current_status": db_complaint.current_status}
 # 🔹 PUT: Full update of complaint details
 @router.put("/{complaint_id}", response_model=schemas.ComplaintRead)
 def update_complaint_details(
@@ -329,9 +333,9 @@ def update_complaint_details(
 # 🔹 GET: Fetch complaints (with optional filters)
 @router.get("/", response_model=list[schemas.ComplaintRead])
 def get_complaints(
-    department: int | None = Query(None),
-    urgency: int | None = Query(None),
-    status: int | None = Query(None),
+    department: str | None = Query(None),
+    urgency: str | None = Query(None),
+    status: str | None = Query(None),
     district_id: int | None = Query(None),
     municipality_id: int | None = Query(None),
     ward_id: int | None = Query(None),
