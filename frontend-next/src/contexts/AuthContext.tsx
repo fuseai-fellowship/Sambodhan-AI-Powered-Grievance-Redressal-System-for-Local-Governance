@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
 import apiClient from '@/lib/api-client';
 import { User, AuthResponse } from '@/types';
@@ -21,11 +21,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Check if we're on an admin page
+  const isAdminPage = pathname?.startsWith('/admin-dashboard') || pathname?.startsWith('/admin-login');
 
   // Load user on mount
   useEffect(() => {
+    // Skip auth check for admin pages
+    if (isAdminPage) {
+      setLoading(false);
+      return;
+    }
     loadUser();
-  }, []);
+  }, [isAdminPage]);
 
   const loadUser = async () => {
     const token = Cookies.get('sambodhan_token');
