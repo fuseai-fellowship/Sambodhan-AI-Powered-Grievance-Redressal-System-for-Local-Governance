@@ -47,9 +47,13 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 ```
 ├── docs/                     # Project documentation
-│   ├── architecture.md       # System architecture and design
-│   ├── api.md                # API specifications and endpoints
-│   └── README.md             # General project documentation
+│   ├── architecture.md       # System architecture, components and high-level diagrams
+│   ├── department_classifier.md # Department classifier API, deployment and customization guide
+│   ├── grievance_dataset_schema.md # Grievance dataset schema, labels and mappings
+│   ├── prepare_dataset.md    # Prepare-dataset HF Space: pipeline, deployment and usage
+│   ├── README.md             # Docs index (this file summarizes and links the other docs)
+│   ├── retraining_classifier.md # Retraining pipeline architecture, decision gates and runbook
+│   └── urgency_classifier.md # Urgency classifier API, deployment and examples
 ├── data/                     # All project data
 │   ├── raw/                  # Original/raw datasets
 │   │   ├── csv/              # CSV data files
@@ -74,15 +78,16 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 │   │   ├── evaluation/       # Model evaluation metrics & plots
 │   │   └── utils/            # ML utility functions
 │   └── services/             # Standalone classifier microservices
-│       ├── department-classifier/  # Department classification API
-│       └── urgency-classifier/     # Urgency classification API
+│       ├── department_classifier_api/  # Department classification API
+│       ├── prepare_dataset # prepare dataset pipeline
+│       ├── retrain_model # retrain model pipeline 
+│       └── urgency_classifier_api/     # Urgency classification API
 ├── tests/                    # Automated tests
 │   ├── backend/              # Backend tests
 │   ├── frontend/             # Frontend tests
 │   └── data_science/         # ML/NLP pipeline tests
 ├── scripts/                  # Utility scripts for automation
-│   ├── export/               # Scripts to export or preprocess data
-│   └── dept_classifier/      # Scripts for model training and dataset-prep
+│   └── export/               # Scripts to export or preprocess data
 ├── requirements.txt          # Python dependencies
 ├── environment.yml           # Conda environment specification
 ├── Dockerfile                # Dockerfile for main backend
