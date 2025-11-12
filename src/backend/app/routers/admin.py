@@ -80,7 +80,23 @@ def login_admin(login_req: AdminLoginRequest, db: Session = Depends(get_db)):
 from fastapi import Path
 @router.get("/{admin_id}", response_model=AdminRead)
 def get_admin_by_id(admin_id: int = Path(..., description="Admin ID"), db: Session = Depends(get_db)):
+    from app.models.location import Municipality, District
+    
     admin = db.query(Admin).filter(Admin.id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admin not found")
-    return AdminRead.model_validate(admin)
+    
+    # Fetch municipality and district names
+    admin_dict = AdminRead.model_validate(admin).model_dump()
+    
+    if admin.municipality_id is not None:
+        municipality = db.query(Municipality).filter(Municipality.id == admin.municipality_id).first()
+        if municipality:
+            admin_dict["municipality_name"] = municipality.name
+            # Get district name from municipality's district
+            if municipality.district_id is not None:
+                district = db.query(District).filter(District.id == municipality.district_id).first()
+                if district:
+                    admin_dict["district_name"] = district.name
+    
+    return AdminRead(**admin_dict)

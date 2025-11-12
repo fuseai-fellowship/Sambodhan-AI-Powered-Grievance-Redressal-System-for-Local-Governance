@@ -31,6 +31,25 @@ const AdminLoginPage: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
   const router = useRouter();
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const token = Cookies.get('sambodhan_token');
+    const userStr = Cookies.get('sambodhan_admin_user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user && user.id) {
+          // User already logged in, redirect to dashboard
+          router.replace(`/admin-dashboard?role=${user.role}&user_id=${user.id}`);
+        }
+      } catch (err) {
+        // Invalid cookie, clear it
+        Cookies.remove('sambodhan_token');
+        Cookies.remove('sambodhan_admin_user');
+      }
+    }
+  }, [router]);
+
 
   useEffect(() => {
     // Fetch districts (with trailing slash)
@@ -65,10 +84,10 @@ const AdminLoginPage: React.FC = () => {
         setError('Login failed.');
         return;
       }
-  // Store token in cookie for api-client to use
-  Cookies.set('sambodhan_token', access_token, { expires: 1 });
-  Cookies.set('sambodhan_user', JSON.stringify(admin), { expires: 1 });
-  router.push(`/admin-dashboard?role=${admin.role}&user_id=${admin.id}`);
+      // Store token in cookie for api-client to use (use admin-specific cookie)
+      Cookies.set('sambodhan_token', access_token, { expires: 7 });
+      Cookies.set('sambodhan_admin_user', JSON.stringify(admin), { expires: 7 });
+      router.replace(`/admin-dashboard?role=${admin.role}&user_id=${admin.id}`);
     } catch (err: any) {
       const errMsg = err?.response?.data?.detail;
       setError(typeof errMsg === 'string' ? errMsg : 'Login failed.');
@@ -100,9 +119,9 @@ const AdminLoginPage: React.FC = () => {
         setError('Login failed after registration.');
         return;
       }
-      Cookies.set('sambodhan_token', access_token, { expires: 1 });
-      Cookies.set('sambodhan_user', JSON.stringify(admin), { expires: 1 });
-      router.push(`/admin-dashboard?role=${admin.role}&user_id=${admin.id}`);
+      Cookies.set('sambodhan_token', access_token, { expires: 7 });
+      Cookies.set('sambodhan_admin_user', JSON.stringify(admin), { expires: 7 });
+      router.replace(`/admin-dashboard?role=${admin.role}&user_id=${admin.id}`);
     } catch (err: any) {
       const errMsg = err?.response?.data?.detail || err?.message;
       setError(typeof errMsg === 'string' ? errMsg : 'Registration failed.');

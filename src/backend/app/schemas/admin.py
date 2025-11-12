@@ -16,5 +16,7 @@ class AdminCreate(AdminBase):
 class AdminRead(AdminBase):
     id: int
     created_at: Optional[datetime] = None
+    municipality_name: Optional[str] = None
+    district_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, case
 
 from app import models
 
@@ -56,7 +56,13 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
     urg_rows = urg_query.group_by(models.Complaint.urgency).all()
     by_urgency = {u if u is not None else "Unspecified": int(c) for u, c in urg_rows}
 
-    dept_query = db.query(models.Complaint.department, func.count(models.Complaint.id))
+    # Enhanced department breakdown
+    dept_query = db.query(
+        models.Complaint.department,
+        func.count(models.Complaint.id).label("total"),
+        func.sum(case((models.Complaint.current_status == "RESOLVED", 1), else_=0)).label("resolved"),
+        func.avg(case((models.Complaint.current_status == "RESOLVED", 100), else_=0)).label("rate")
+    )
     if ward_id:
         dept_query = dept_query.filter(models.Complaint.ward_id == ward_id)
     if department:
@@ -65,7 +71,14 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
         dept_query = dept_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         dept_query = dept_query.filter(models.Ward.municipality_id == municipality_id)
     dept_rows = dept_query.group_by(models.Complaint.department).all()
-    by_department = {d if d is not None else "Unspecified": int(c) for d, c in dept_rows}
+    by_department = {}
+    for d, total, resolved, rate in dept_rows:
+        key = d if d is not None else "Unspecified"
+        by_department[key] = {
+            "total": int(total),
+            "resolved": int(resolved) if resolved is not None else 0,
+            "rate": float(rate) if rate is not None else None
+        }
 
     status_query = db.query(models.Complaint.current_status, func.count(models.Complaint.id))
     if ward_id:
@@ -76,7 +89,6 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
         status_query = status_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         status_query = status_query.filter(models.Ward.municipality_id == municipality_id)
     status_rows = status_query.group_by(models.Complaint.current_status).all()
-    # Map status to title case for frontend compatibility
     by_status = {}
     for s, c in status_rows:
         key = s.title() if s else "Unspecified"
