@@ -1,17 +1,25 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import apiClient from "@/lib/api-client";
 import DashboardInsights from "@/components/DashboardInsights";
 import FileComplaintForm from './FileComplaintForm';
+import SummaryCards from "@/components/dashboard/SummaryCards";
+import PerformanceBenchmark from "@/components/dashboard/PerformanceBenchmark";
+import QualityMetricsChart from "@/components/dashboard/QualityMetricsChart";
+import LocationHotspotsChart from "@/components/dashboard/LocationHotspotsChart";
+import IssueBreakdownTable from "@/components/dashboard/IssueBreakdownTable";
+import ResponseTimeChart from "@/components/dashboard/ResponseTimeChart";
+import AdminGrievanceManager from "@/components/dashboard/AdminGrievanceManager";
 
 // Admin Analytics Dashboard Section
 function AdminAnalyticsDashboard() {
   const [summary, setSummary] = useState<any>(null);
-  const [byUrgency, setByUrgency] = useState<any>(null);
-  const [byDepartment, setByDepartment] = useState<any>(null);
-  const [byStatus, setByStatus] = useState<any>(null);
-  const [byDistrict, setByDistrict] = useState<any>(null);
+  const [performance, setPerformance] = useState<any>(null);
+  const [qualityMetrics, setQualityMetrics] = useState<any>(null);
+  const [locationHotspots, setLocationHotspots] = useState<any>(null);
+  const [issueBreakdown, setIssueBreakdown] = useState<any>(null);
+  const [responseTime, setResponseTime] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,18 +28,20 @@ function AdminAnalyticsDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [summaryRes, urgencyRes, deptRes, statusRes, districtRes] = await Promise.all([
+        const [summaryRes, performanceRes, qualityRes, hotspotsRes, breakdownRes, responseRes] = await Promise.all([
           apiClient.get('/api/analytics/summary'),
-          apiClient.get('/api/analytics/by-urgency'),
-          apiClient.get('/api/analytics/by-department'),
-          apiClient.get('/api/analytics/by-status'),
-          apiClient.get('/api/analytics/by-district'),
+          apiClient.get('/api/analytics/performance'),
+          apiClient.get('/api/analytics/quality-metrics'),
+          apiClient.get('/api/analytics/location-hotspots'),
+          apiClient.get('/api/analytics/issue-breakdown'),
+          apiClient.get('/api/analytics/response-time'),
         ]);
         setSummary(summaryRes.data);
-        setByUrgency(urgencyRes.data);
-        setByDepartment(deptRes.data);
-        setByStatus(statusRes.data);
-        setByDistrict(districtRes.data);
+        setPerformance(performanceRes.data);
+        setQualityMetrics(qualityRes.data);
+        setLocationHotspots(hotspotsRes.data);
+        setIssueBreakdown(breakdownRes.data);
+        setResponseTime(responseRes.data);
       } catch (err: any) {
         setError(err?.message || 'Failed to load analytics');
       } finally {
@@ -45,29 +55,28 @@ function AdminAnalyticsDashboard() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="mb-12">
-      <h2 className="text-2xl font-bold mb-4">Admin Analytics Dashboard</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-xl border p-5 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">Summary</h3>
-          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(summary, null, 2)}</pre>
-        </div>
-        <div className="bg-white rounded-xl border p-5 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">By Urgency</h3>
-          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byUrgency, null, 2)}</pre>
-        </div>
-        <div className="bg-white rounded-xl border p-5 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">By Department</h3>
-          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDepartment, null, 2)}</pre>
-        </div>
-        <div className="bg-white rounded-xl border p-5 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">By Status</h3>
-          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byStatus, null, 2)}</pre>
-        </div>
-        <div className="bg-white rounded-xl border p-5 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">By District</h3>
-          <pre className="text-xs text-gray-700 bg-gray-50 rounded p-2 overflow-x-auto">{JSON.stringify(byDistrict, null, 2)}</pre>
-        </div>
+    <div className="mb-12 px-2 md:px-0">
+      <h2 className="text-2xl font-bold mb-6">Admin Analytics Dashboard</h2>
+      {/* Overview & Team Performance */}
+      <SummaryCards data={summary} loading={loading} />
+
+      {/* Workflow & Analytics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <PerformanceBenchmark data={performance} loading={loading} />
+        <QualityMetricsChart data={qualityMetrics} loading={loading} />
+      </div>
+
+      {/* My Cases & Issue Type Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        {/* Replace with actual user prop if needed */}
+        <AdminGrievanceManager user={summary?.user} />
+        <IssueBreakdownTable data={issueBreakdown} loading={loading} />
+      </div>
+
+      {/* Location Hotspots & Response Time Distribution */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <LocationHotspotsChart data={locationHotspots} loading={loading} />
+        <ResponseTimeChart data={responseTime} loading={loading} />
       </div>
     </div>
   );
@@ -82,23 +91,24 @@ import axios from "axios";
 
 
 // Main Dashboard Page
-export default function DashboardPage() {
+const DashboardPage = () => {
   const { user, loading } = useAuth();
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
   if (!user) return <div className="p-8 text-center text-red-500">You must be logged in to view the dashboard.</div>;
 
-  // Show admin analytics if user is admin
-  return (
-    <div>
-      {user.role === 'admin' && <AdminAnalyticsDashboard />}
-      {/* ...other dashboard sections for non-admins... */}
-      {/* <DashboardInsights complaints={complaints} /> etc. */}
-      {/* <FileComplaintForm /> etc. */}
-      {/* <DashboardFooter /> */}
-    </div>
-  );
-}
+  // Debug: Log user object to console
+  console.log("Dashboard - Current user:", user);
+  console.log("Dashboard - User role:", user.role);
+
+  // Show admin analytics if user is admin, otherwise show citizen dashboard
+  if (user.role === 'admin') {
+    return <AdminAnalyticsDashboard />;
+  }
+  
+  // Show citizen dashboard for all other users (including 'citizen' role)
+  return <Dashboard />;
+};
 
 const Dashboard = () => {
   // Get user and logout from AuthContext
@@ -667,10 +677,10 @@ const Dashboard = () => {
           )}
         </div>
       </main>
-      <DashboardFooter />
+  {/* <DashboardFooter /> */}
     </div>
   );
 };
 
-export default Dashboard;
+export default DashboardPage;
 
