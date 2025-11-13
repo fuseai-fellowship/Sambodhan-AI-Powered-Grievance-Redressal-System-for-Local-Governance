@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
-import { MapPin, FileText, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { MapPin, FileText, Send, CheckCircle, AlertCircle, Info, ChevronDown } from 'lucide-react';
 
 // Form validation schema
 const complaintSchema = z.object({
@@ -136,8 +136,6 @@ export default function FileComplaintPage() {
       await apiClient.post('/complaints', {
         citizen_id: user?.id || null,
         ward_id: parseInt(data.ward_id),
-        municipality_id: parseInt(data.municipality_id),
-        district_id: parseInt(data.district_id),
         message: data.description,
         department: 0, // Unclassified - will be classified by ML
         urgency: 0, // Will be classified by ML
@@ -179,180 +177,266 @@ export default function FileComplaintPage() {
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-green-100 p-4 rounded-full">
-              <CheckCircle className="h-16 w-16 text-green-600" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-md p-8 text-center border border-gray-100">
+            <div className="flex justify-center mb-6">
+              <div className="bg-green-100 p-4 rounded-full">
+                <CheckCircle className="h-16 w-16 text-green-600" strokeWidth={2.5} />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Success!
+            </h2>
+            <p className="text-lg text-gray-700 mb-2">
+              Your complaint has been submitted
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              We'll process your grievance and get back to you soon.
+            </p>
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium">
+                Redirecting to My Complaints...
+              </p>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Complaint Submitted Successfully!
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Your grievance has been registered and is being processed.
-          </p>
-          <p className="text-sm text-gray-500">
-            Redirecting to My Complaints...
-          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <FileText className="h-6 w-6 mr-2" />
-            File a Complaint
-          </h2>
-          <p className="text-indigo-100 mt-1">
-            Submit your grievance with accurate location details
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Page Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-[#E8214A] rounded-lg shadow-sm mb-4">
+            <FileText className="h-7 w-7 text-white" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Submit Your Grievance
+          </h1>
+          <p className="text-base text-gray-600 max-w-2xl mx-auto">
+            Report your concerns and we'll work to resolve them. Your voice matters.
           </p>
         </div>
 
-        {/* Form */}
-        <div className="p-6">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Location Section */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-indigo-600" />
-                Location Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* District Dropdown */}
-                <div>
-                  <label htmlFor="district_id" className="block text-sm font-medium text-gray-700 mb-1">
-                    District *
-                  </label>
-                  <select
-                    {...register('district_id')}
-                    id="district_id"
-                    disabled={loadingDistricts}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {loadingDistricts ? 'Loading...' : 'Select District'}
-                    </option>
-                    {districts.map((district) => (
-                      <option key={district.id} value={district.id}>
-                        {district.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.district_id && <p className="mt-1 text-xs text-red-600">{errors.district_id.message}</p>}
-                </div>
-
-                {/* Municipality Dropdown */}
-                <div>
-                  <label htmlFor="municipality_id" className="block text-sm font-medium text-gray-700 mb-1">
-                    Municipality *
-                  </label>
-                  <select
-                    {...register('municipality_id')}
-                    id="municipality_id"
-                    disabled={!selectedDistrictId || loadingMunicipalities}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {loadingMunicipalities ? 'Loading...' : 'Select Municipality'}
-                    </option>
-                    {municipalities.map((municipality) => (
-                      <option key={municipality.id} value={municipality.id}>
-                        {municipality.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.municipality_id && <p className="mt-1 text-xs text-red-600">{errors.municipality_id.message}</p>}
-                </div>
-
-                {/* Ward Dropdown */}
-                <div>
-                  <label htmlFor="ward_id" className="block text-sm font-medium text-gray-700 mb-1">
-                    Ward *
-                  </label>
-                  <select
-                    {...register('ward_id')}
-                    id="ward_id"
-                    disabled={!selectedMunicipalityId || loadingWards}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {loadingWards ? 'Loading...' : 'Select Ward'}
-                    </option>
-                    {wards.map((ward) => (
-                      <option key={ward.id} value={ward.id}>
-                        Ward {ward.ward_number}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.ward_id && <p className="mt-1 text-xs text-red-600">{errors.ward_id.message}</p>}
-                </div>
+        {/* Main Form Card */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+          {/* Info Banner */}
+          <div className="bg-[#E8214A] px-6 py-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-white shrink-0 mt-0.5" />
+              <div className="text-white">
+                <p className="font-semibold text-sm">Quick Tip</p>
+                <p className="text-xs text-red-100 mt-0.5">
+                  Provide accurate location details and a clear description for faster resolution
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Complaint Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Complaint Description *
-              </label>
-              <textarea
-                {...register('description')}
-                id="description"
-                rows={6}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                placeholder="Describe your grievance in detail. Please provide as much information as possible..."
-              />
-              {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>}
-              <p className="mt-1 text-xs text-gray-500">
-                Minimum 20 characters, maximum 1000 characters
-              </p>
-            </div>
+          {/* Form Content */}
+          <div className="p-8">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-md flex items-start gap-3 shadow-sm">
+                <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-800 font-medium">{error}</p>
+              </div>
+            )}
 
-            {/* Submit Button */}
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-5 w-5 mr-2" />
-                    Submit Complaint
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+              {/* Location Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <MapPin className="h-5 w-5 text-[#E8214A]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Location Details
+                  </h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* District Dropdown */}
+                  <div className="group">
+                    <label htmlFor="district_id" className="block text-sm font-semibold text-gray-700 mb-2">
+                      District <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('district_id')}
+                        id="district_id"
+                        disabled={loadingDistricts}
+                        className="block w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white disabled:bg-gray-50 disabled:cursor-not-allowed transition-all appearance-none text-gray-900 font-medium hover:border-gray-300"
+                      >
+                        <option value="" className="text-gray-500">
+                          {loadingDistricts ? 'Loading districts...' : 'Select your district'}
+                        </option>
+                        {districts.map((district) => (
+                          <option key={district.id} value={district.id} className="text-gray-900">
+                            {district.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.district_id && (
+                      <p className="mt-2 text-xs text-red-600 font-medium flex items-center gap-1">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {errors.district_id.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Municipality Dropdown */}
+                  <div className="group">
+                    <label htmlFor="municipality_id" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Municipality <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('municipality_id')}
+                        id="municipality_id"
+                        disabled={!selectedDistrictId || loadingMunicipalities}
+                        className="block w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white disabled:bg-gray-50 disabled:cursor-not-allowed transition-all appearance-none text-gray-900 font-medium hover:border-gray-300"
+                      >
+                        <option value="" className="text-gray-500">
+                          {loadingMunicipalities ? 'Loading...' : selectedDistrictId ? 'Select municipality' : 'Select district first'}
+                        </option>
+                        {municipalities.map((municipality) => (
+                          <option key={municipality.id} value={municipality.id} className="text-gray-900">
+                            {municipality.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.municipality_id && (
+                      <p className="mt-2 text-xs text-red-600 font-medium flex items-center gap-1">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {errors.municipality_id.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Ward Dropdown */}
+                  <div className="group">
+                    <label htmlFor="ward_id" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Ward <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('ward_id')}
+                        id="ward_id"
+                        disabled={!selectedMunicipalityId || loadingWards}
+                        className="block w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white disabled:bg-gray-50 disabled:cursor-not-allowed transition-all appearance-none text-gray-900 font-medium hover:border-gray-300"
+                      >
+                        <option value="" className="text-gray-500">
+                          {loadingWards ? 'Loading...' : selectedMunicipalityId ? 'Select ward' : 'Select municipality first'}
+                        </option>
+                        {wards.map((ward) => (
+                          <option key={ward.id} value={ward.id} className="text-gray-900">
+                            Ward {ward.ward_number}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.ward_id && (
+                      <p className="mt-2 text-xs text-red-600 font-medium flex items-center gap-1">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {errors.ward_id.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-gray-200"></div>
+
+              {/* Complaint Description */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+                  <div className="bg-red-50 p-2 rounded-lg">
+                    <FileText className="h-5 w-5 text-[#E8214A]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Describe Your Grievance
+                  </h3>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Complaint Description <span className="text-red-600">*</span>
+                  </label>
+                  <textarea
+                    {...register('description')}
+                    id="description"
+                    rows={6}
+                    className="block w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white resize-none transition-all hover:border-gray-300 text-gray-900"
+                    placeholder="Please provide a detailed description of your grievance. Include what happened, when it occurred, and any other relevant information that will help us address your concern effectively..."
+                  />
+                  {errors.description && (
+                    <p className="mt-2 text-xs text-red-600 font-medium flex items-center gap-1">
+                      <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                      {errors.description.message}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Minimum 20 characters required</span>
+                    <span className="text-gray-400">Maximum 1000 characters</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Section */}
+              <div className="pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-6 py-3 bg-[#E8214A] hover:bg-[#c81940] text-white font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E8214A] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Submitting Your Complaint...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5 mr-2" />
+                        Submit Complaint
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Help Text */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-500">
+            Need help? Contact support at{' '}
+            <a href="mailto:info@grievance.gov.np" className="text-[#E8214A] hover:underline font-medium">
+              info@grievance.gov.np
+            </a>
+          </p>
         </div>
       </div>
     </div>

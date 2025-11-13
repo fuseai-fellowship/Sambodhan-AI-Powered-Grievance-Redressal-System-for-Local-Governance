@@ -84,7 +84,7 @@ function AdminAnalyticsDashboard() {
 
 // Footer from LandingPage
 // ...existing DashboardFooter code...
-import { User, Clock, CheckCircle2, TrendingUp, FileText, CheckCircle, Info, MapPin, Zap, Wrench, Trash2, Send } from "lucide-react";
+import { User, Clock, CheckCircle2, TrendingUp, FileText, CheckCircle, Info, MapPin, Zap, Wrench, Trash2, Send, Phone, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
@@ -250,10 +250,67 @@ const Dashboard = () => {
     active: 0,
     avgResolution: 0,
   });
+  // Pagination state for My Grievances
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   // Dropdown states
   const [districts, setDistricts] = useState([]);
   const [municipalities, setMunicipalities] = useState([]);
   const [wards, setWards] = useState([]);
+  
+  // Modal state for viewing complaint details
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [complaintToDelete, setComplaintToDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Handle quick action clicks
+  const handleQuickAction = (actionName: string) => {
+    setActiveTab('Submit Grievance');
+    // Pre-fill the form with the action name
+    setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        title: actionName,
+        description: `I want to report: ${actionName}`,
+      }));
+    }, 100);
+  };
+
+  // View complaint details
+  const handleViewDetails = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setShowDetailsModal(true);
+  };
+
+  // Delete complaint
+  const handleDeleteClick = (complaintId: number) => {
+    setComplaintToDelete(complaintId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!complaintToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await apiClient.delete(`/api/complaints/${complaintToDelete}`);
+      // Remove from local state
+      setComplaints(prev => prev.filter(c => c.id !== complaintToDelete));
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        total: prev.total - 1,
+      }));
+      setShowDeleteConfirm(false);
+      setComplaintToDelete(null);
+    } catch (err) {
+      alert('Failed to delete complaint. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Load categories and wards (simulate API)
   useEffect(() => {
@@ -312,6 +369,10 @@ const Dashboard = () => {
     useEffect(() => {
       apiClient.get("/chatbot/auth/complaints")
         .then(res => {
+          console.log("Complaints API Response:", res.data);
+          if (res.data.length > 0) {
+            console.log("First complaint sample:", res.data[0]);
+          }
           setComplaints(res.data);
           // Calculate stats
           const total = res.data.length;
@@ -413,51 +474,85 @@ const Dashboard = () => {
     Sanitation: <Trash2 className="w-4 h-4" />,
   };
 
-  // Map real complaints to grievance cards (fallback to demo if none)
-  const grievanceCards = (complaints.length > 0 ? complaints.slice(0, 3) : [
-    {
-      id: "GRV-2025-001",
-      title: "Street Light Not Working",
-      date: "2025-10-15",
-      ward: "Ward 12, Thamel",
-      category: "Electricity",
-      status: "Resolved",
-      priority: "Medium",
-    },
-    {
-      id: "GRV-2025-045",
-      title: "Road Repair Needed",
-      date: "2025-10-20",
-      ward: "Ward 12, Main Road",
-      category: "Infrastructure",
-      status: "In Progress",
-      priority: "High",
-    },
-    {
-      id: "GRV-2025-062",
-      title: "Garbage Collection Delay",
-      date: "2025-10-25",
-      ward: "Ward 12, Residential Area",
-      category: "Sanitation",
-      status: "Pending",
-      priority: "Medium",
-    },
-  ]).map((g, idx) => (
-    <div key={g.id || idx} className="flex justify-between items-center border rounded-xl p-4 hover:shadow-md transition bg-white">
-      <div>
-        <h3 className="font-medium text-gray-900">{g.title}</h3>
-        <p className="text-sm text-gray-500">{g.id} • {g.date}</p>
-        <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
-          <MapPin className="w-4 h-4" /> {g.ward}
-          <span className="flex items-center gap-1 ml-3">{icons[g.category] || null} {g.category}</span>
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        <StatusBadge status={g.status} />
-        <PriorityBadge priority={g.priority} />
-      </div>
-    </div>
-  ));
+  // Map real complaints to recent grievances (top 3 latest)
+  const recentGrievances = complaints.slice(0, 3).map((g) => {
+    // Map status
+    const statusMap: Record<string | number, string> = {
+      0: 'Pending', 1: 'In Progress', 2: 'Resolved', 3: 'Rejected',
+      'Pending': 'Pending', 'In Progress': 'In Progress', 'Resolved': 'Resolved', 'Rejected': 'Rejected',
+    };
+    let statusLabel = statusMap[g.current_status] || statusMap[g.status_name] || 'Pending';
+
+    // Extract location info
+    let municipalityName = '';
+    let districtName = '';
+    let wardNumber = null;
+
+    // Try municipality_name and district_name from top level first
+    if (g.municipality_name && g.municipality_name.trim() !== '') {
+      municipalityName = g.municipality_name;
+    }
+    if (g.district_name && g.district_name.trim() !== '') {
+      districtName = g.district_name;
+    }
+
+    // Fallback to nested ward object
+    if (!municipalityName && g.ward?.municipality) {
+      municipalityName = g.ward.municipality.name || '';
+      if (!districtName && g.ward.municipality.district) {
+        districtName = g.ward.municipality.district.name || '';
+      }
+    }
+    
+    // Get ward number/name
+    if (g.ward_name && g.ward_name.trim() !== '') {
+      wardNumber = g.ward_name;
+    } else if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
+      wardNumber = g.ward.ward_number;
+    }
+
+    const location = municipalityName && districtName 
+      ? `${municipalityName}, ${districtName}` 
+      : municipalityName || districtName || 'Location not specified';
+    
+    const wardDisplay = (wardNumber && (typeof wardNumber === 'string' ? wardNumber.trim() !== '' : wardNumber > 0)) 
+      ? `Ward ${wardNumber}` 
+      : (g.ward_id && g.ward_id > 0 ? `Ward ID: ${g.ward_id}` : '-');
+
+    // Department - use department_name from API
+    const department = (g.department_name && g.department_name.trim() !== '') 
+      ? g.department_name 
+      : 'General';
+
+    // Urgency - use urgency_name from API
+    const urgency = (g.urgency_name && g.urgency_name.trim() !== '') 
+      ? g.urgency_name.toUpperCase()  // Ensure uppercase for consistency
+      : 'NORMAL';
+
+    // Format date
+    const formattedDate = g.created_at 
+      ? new Date(g.created_at).toLocaleDateString('en-US', { 
+          year: 'numeric', month: 'short', day: 'numeric' 
+        })
+      : 'N/A';
+
+    // Message preview (first 80 chars)
+    const messagePreview = g.message 
+      ? g.message.length > 80 ? g.message.substring(0, 80) + '...' : g.message
+      : 'No description provided';
+
+    return {
+      id: g.id,
+      complaintNumber: `#${g.id}`,
+      department,
+      urgency,
+      status: statusLabel,
+      date: formattedDate,
+      location,
+      ward: wardDisplay,
+      message: messagePreview,
+    };
+  });
 
   // Community updates (static for now)
   const updates = [
@@ -475,7 +570,7 @@ const Dashboard = () => {
   ];
 
   return (
-  <div className="min-h-screen bg-gray-50 font-inter w-full">
+  <div className="min-h-screen bg-gray-50 font-inter w-full flex flex-col">
       {/* Navbar from Landing Page, but with only required content */}
   <nav className="w-full flex justify-between items-center px-8 py-2 shadow-sm bg-white/70 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300">
         <div className="flex items-center gap-3">
@@ -492,11 +587,13 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <User className="w-5 h-5 text-gray-700" />
-          <span className="text-base font-semibold text-gray-700">{user?.name || "User"}</span>
+          <div className="flex items-center gap-2 text-gray-700">
+            <User className="w-5 h-5" />
+            <span className="text-base font-semibold">{user?.name || "User"}</span>
+          </div>
           <button
             onClick={logout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md font-medium transition"
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-semibold transition"
             title="Logout"
           >
             Logout
@@ -505,7 +602,7 @@ const Dashboard = () => {
       </nav>
 
       {/* Welcome Section */}
-  <main className="w-full px-10 py-8">
+  <main className="flex-1 w-full px-10 py-8">
         <div className="mb-2">
           <span className="block text-lg font-semibold text-red-700">Welcome, {user?.name || "User"}!</span>
         </div>
@@ -536,7 +633,13 @@ const Dashboard = () => {
             (tab, idx) => (
               <button
                 key={idx}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => {
+                  setActiveTab(tab);
+                  // Reset to first page when switching to My Grievances
+                  if (tab === "My Grievances") {
+                    setCurrentPage(1);
+                  }
+                }}
                 className={`border rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition ${
                   activeTab === tab
                     ? "bg-blue-100 text-blue-700"
@@ -553,19 +656,95 @@ const Dashboard = () => {
         <div className="mt-8">
           {activeTab === "Dashboard" && (
             <>
-              <DashboardInsights complaints={complaints} />
+              <DashboardInsights complaints={complaints} onQuickAction={handleQuickAction} />
               {/* Recent Grievances Section */}
               <section className="bg-white p-6 rounded-xl shadow-sm border mt-12">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="font-semibold text-lg text-gray-800">Recent Grievances</h2>
                     <p className="text-sm text-gray-500">Your latest submissions</p>
                   </div>
-                  <button className="text-sm text-blue-600 font-medium hover:underline">View All</button>
+                  <button 
+                    onClick={() => setActiveTab('My Grievances')}
+                    className="text-sm text-red-600 font-medium hover:text-red-700 hover:underline transition"
+                  >
+                    View All →
+                  </button>
                 </div>
-                <div className="space-y-4">
-                  {grievanceCards}
-                </div>
+                {complaints.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                      <FileText className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 mb-2">No grievances submitted yet</p>
+                    <p className="text-sm text-gray-400 mb-4">Start by submitting your first complaint</p>
+                    <button
+                      onClick={() => setActiveTab('Submit Grievance')}
+                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition"
+                    >
+                      Submit Grievance
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentGrievances.map((g) => {
+                      // Status badge styling
+                      const statusStyles: Record<string, string> = {
+                        'Resolved': 'bg-green-100 text-green-700 border-green-200',
+                        'In Progress': 'bg-blue-100 text-blue-700 border-blue-200',
+                        'Pending': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                        'Rejected': 'bg-red-100 text-red-700 border-red-200',
+                      };
+
+                      // Urgency badge styling
+                      const urgencyStyles: Record<string, string> = {
+                        'HIGHLY URGENT': 'bg-red-100 text-red-700 border-red-200',
+                        'URGENT': 'bg-orange-100 text-orange-700 border-orange-200',
+                        'NORMAL': 'bg-gray-100 text-gray-600 border-gray-200',
+                      };
+
+                      return (
+                        <div 
+                          key={g.id} 
+                          className="border border-gray-200 rounded-lg p-5 hover:shadow-md hover:border-gray-300 transition-all bg-gray-50"
+                        >
+                          {/* Header Row */}
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm font-semibold text-gray-900">{g.complaintNumber}</span>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-500">{g.date}</span>
+                              </div>
+                              <h3 className="text-base font-semibold text-gray-800 mb-2">{g.department}</h3>
+                              <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">{g.message}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2 ml-4">
+                              <span className={`text-xs font-medium px-2.5 py-1 rounded-md border ${statusStyles[g.status] || statusStyles['Pending']}`}>
+                                {g.status}
+                              </span>
+                              <span className={`text-xs font-medium px-2.5 py-1 rounded-md border ${urgencyStyles[g.urgency] || urgencyStyles['NORMAL']}`}>
+                                {g.urgency}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Footer Row */}
+                          <div className="flex items-center gap-4 text-xs text-gray-500 pt-3 border-t border-gray-200">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>{g.location}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Info className="w-3.5 h-3.5" />
+                              <span>{g.ward}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             </>
           )}
@@ -578,63 +757,245 @@ const Dashboard = () => {
               ) : complaints.length === 0 ? (
                 <div className="py-8 text-center text-gray-400">No grievances submitted yet.</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {complaints.map((g) => {
-                    // Map status code to label
-                    const statusMap: Record<string | number, string> = {
-                      0: 'Pending',
-                      1: 'In Progress',
-                      2: 'Resolved',
-                      3: 'Rejected',
-                      'Pending': 'Pending',
-                      'In Progress': 'In Progress',
-                      'Resolved': 'Resolved',
-                      'Rejected': 'Rejected',
-                    };
-                    // Try all possible status fields
-                    let statusLabel = statusMap[g.current_status];
-                    if (!statusLabel && g.status_name) statusLabel = statusMap[g.status_name] || g.status_name;
-                    if (!statusLabel && typeof g.status === 'number') statusLabel = statusMap[g.status];
-                    if (!statusLabel && typeof g.status === 'string') statusLabel = statusMap[g.status] || g.status;
-                    if (!statusLabel) statusLabel = 'Pending';
+                <>
+                  {/* Pagination Info */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, complaints.length)} of {complaints.length} grievances
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Page {currentPage} of {Math.ceil(complaints.length / itemsPerPage)}
+                    </p>
+                  </div>
 
-                    // Ward display: handle missing, zero, or string cases
-                    let wardDisplay = '-';
-                    if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
-                      const wNum = g.ward.ward_number;
-                      if (typeof wNum === 'number' && wNum > 0) wardDisplay = `Ward ${wNum}`;
-                      else if (typeof wNum === 'string' && wNum.trim() !== '' && wNum !== '0') wardDisplay = `Ward ${wNum}`;
-                    } else if (g.ward_number && g.ward_number !== '0' && g.ward_number !== 0) {
-                      wardDisplay = `Ward ${g.ward_number}`;
-                    }
+                  {/* Grievances Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {complaints
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((g) => {
+                        // Map status code to label
+                        const statusMap: Record<string | number, string> = {
+                          0: 'Pending',
+                          1: 'In Progress',
+                          2: 'Resolved',
+                          3: 'Rejected',
+                          'Pending': 'Pending',
+                          'In Progress': 'In Progress',
+                          'Resolved': 'Resolved',
+                          'Rejected': 'Rejected',
+                        };
+                        // Try all possible status fields
+                        let statusLabel = statusMap[g.current_status];
+                        if (!statusLabel && g.status_name) statusLabel = statusMap[g.status_name] || g.status_name;
+                        if (!statusLabel && typeof g.status === 'number') statusLabel = statusMap[g.status];
+                        if (!statusLabel && typeof g.status === 'string') statusLabel = statusMap[g.status] || g.status;
+                        if (!statusLabel) statusLabel = 'Pending';
 
-                    return (
-                      <div key={g.id} className="flex flex-col justify-between border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="text-xs font-semibold text-gray-500">ID: {g.id}</span>
-                          <span className="text-xs text-gray-400">{new Date(g.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="mb-2">
-                          <span className="inline-block text-sm font-medium text-blue-700 mr-2">{g.department}</span>
-                          <span className={`inline-block text-xs font-semibold px-2 py-1 rounded ${g.urgency === 'HIGHLY URGENT' ? 'bg-red-100 text-red-700' : g.urgency === 'URGENT' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>{g.urgency}</span>
-                        </div>
-                        <div className="mb-2 text-sm text-gray-700">
-                          <span className="font-semibold">Ward:</span> {wardDisplay}
-                        </div>
-                        <div className="mb-2 text-sm text-gray-700">
-                          <span className="font-semibold">Status:</span> <span className={`px-2 py-1 rounded text-xs font-medium ${statusLabel === 'Resolved' ? 'bg-green-100 text-green-700' : statusLabel === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{statusLabel}</span>
-                        </div>
-                        <div className="mb-2 text-sm text-gray-600">
-                          <span className="font-semibold">Message:</span> {g.message.length > 80 ? g.message.slice(0, 80) + '...' : g.message}
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs font-medium transition" title="View Details">View</button>
-                          <button className="bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1 rounded text-xs font-medium transition" title="Delete">Delete</button>
-                        </div>
+                        // Ward display: handle missing, zero, or string cases
+                        let wardDisplay = '-';
+                        let wardNumber = null;
+                        
+                        // Try ward_name first (from the API response we see ward_name: "")
+                        if (g.ward_name && g.ward_name.trim() !== '') {
+                          wardDisplay = g.ward_name;
+                        } else if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
+                          // Check nested ward object
+                          wardNumber = g.ward.ward_number;
+                          if (typeof wardNumber === 'number' && wardNumber > 0) {
+                            wardDisplay = `Ward ${wardNumber}`;
+                          } else if (typeof wardNumber === 'string' && wardNumber.trim() !== '' && wardNumber !== '0') {
+                            wardDisplay = `Ward ${wardNumber}`;
+                          }
+                        } else if (g.ward_number && g.ward_number !== '0' && g.ward_number !== 0) {
+                          // Check top-level ward_number
+                          wardDisplay = `Ward ${g.ward_number}`;
+                          wardNumber = g.ward_number;
+                        } else if (g.ward_id && g.ward_id > 0) {
+                          // If we have ward_id but no name/number, just show the ID
+                          wardDisplay = `Ward ID: ${g.ward_id}`;
+                        }
+
+                        // Department display - use department_name from API
+                        const departmentDisplay = (g.department_name && g.department_name.trim() !== '') 
+                          ? g.department_name 
+                          : 'General';
+
+                        // Urgency display - use urgency_name from API
+                        const urgencyDisplay = (g.urgency_name && g.urgency_name.trim() !== '') 
+                          ? g.urgency_name.toUpperCase()  // Ensure uppercase for consistency
+                          : 'NORMAL';
+
+                        // Format date
+                        const formattedDate = g.created_at 
+                          ? new Date(g.created_at).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })
+                          : 'N/A';
+
+                        // Location display (Municipality/District)
+                        let locationDisplay = '';
+                        let municipalityName = '';
+                        let districtName = '';
+                        
+                        // Try municipality_name and district_name from top level first
+                        if (g.municipality_name && g.municipality_name.trim() !== '') {
+                          municipalityName = g.municipality_name;
+                        }
+                        if (g.district_name && g.district_name.trim() !== '') {
+                          districtName = g.district_name;
+                        }
+                        
+                        // Fallback to nested ward.municipality.district structure
+                        if (!municipalityName && g.ward?.municipality) {
+                          municipalityName = g.ward.municipality.name || '';
+                          if (!districtName && g.ward.municipality.district) {
+                            districtName = g.ward.municipality.district.name || '';
+                          }
+                        }
+                        
+                        // Build location string
+                        if (municipalityName && districtName) {
+                          locationDisplay = `${municipalityName}, ${districtName}`;
+                        } else if (municipalityName) {
+                          locationDisplay = municipalityName;
+                        } else if (districtName) {
+                          locationDisplay = districtName;
+                        } else {
+                          locationDisplay = 'Not specified';
+                        }
+
+                        return (
+                          <div key={g.id} className="flex flex-col justify-between border border-gray-200 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
+                            {/* Header with ID and Date */}
+                            <div className="mb-3 pb-3 border-b border-gray-100">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-bold text-gray-700">Complaint #{g.id}</span>
+                                <span className={`px-2 py-1 rounded text-xs font-semibold ${statusLabel === 'Resolved' ? 'bg-green-100 text-green-700' : statusLabel === 'Pending' ? 'bg-yellow-100 text-yellow-700' : statusLabel === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                  {statusLabel}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">{formattedDate}</span>
+                            </div>
+
+                            {/* Department and Urgency */}
+                            <div className="mb-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-500">Department:</span>
+                                <span className="text-sm font-medium text-[#E8214A]">{departmentDisplay}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-500">Priority:</span>
+                                <span className={`inline-block text-xs font-semibold px-2 py-1 rounded ${urgencyDisplay === 'HIGHLY URGENT' ? 'bg-red-100 text-red-700' : urgencyDisplay === 'URGENT' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
+                                  {urgencyDisplay}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Location */}
+                            <div className="mb-3 space-y-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">Location:</span>
+                                <span className="text-sm text-gray-700">{locationDisplay}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-500">Ward:</span>
+                                <span className="text-sm text-gray-700">{wardDisplay}</span>
+                              </div>
+                            </div>
+
+                            {/* Message */}
+                            <div className="mb-4 flex-grow">
+                              <p className="text-xs font-semibold text-gray-500 mb-1">Description:</p>
+                              <p className="text-sm text-gray-600 line-clamp-3">
+                                {g.message && g.message.trim() !== '' 
+                                  ? g.message 
+                                  : 'No description provided'}
+                              </p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 pt-3 border-t border-gray-100">
+                              <button 
+                                onClick={() => handleViewDetails(g)}
+                                className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-xs font-semibold transition shadow-sm"
+                                title="View Details"
+                              >
+                                View Details
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClick(g.id)}
+                                className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs font-semibold transition shadow-sm"
+                                title="Delete Complaint"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {complaints.length > itemsPerPage && (
+                    <div className="mt-6 flex items-center justify-center gap-2">
+                      {/* Previous Button */}
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Previous
+                      </button>
+
+                      {/* Page Numbers */}
+                      <div className="flex gap-1">
+                        {Array.from({ length: Math.ceil(complaints.length / itemsPerPage) }, (_, i) => i + 1).map((pageNum) => {
+                          // Show first page, last page, current page, and pages around current
+                          const totalPages = Math.ceil(complaints.length / itemsPerPage);
+                          const showPage = 
+                            pageNum === 1 || 
+                            pageNum === totalPages || 
+                            (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+                          
+                          const showEllipsis = 
+                            (pageNum === 2 && currentPage > 3) || 
+                            (pageNum === totalPages - 1 && currentPage < totalPages - 2);
+
+                          if (showEllipsis) {
+                            return <span key={pageNum} className="px-2 py-2 text-gray-400">...</span>;
+                          }
+
+                          if (!showPage) return null;
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-4 py-2 border rounded-lg text-sm font-medium transition ${
+                                currentPage === pageNum
+                                  ? 'bg-[#E8214A] text-white border-[#E8214A]'
+                                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* Next Button */}
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(complaints.length / itemsPerPage)))}
+                        disabled={currentPage === Math.ceil(complaints.length / itemsPerPage)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -669,14 +1030,398 @@ const Dashboard = () => {
             </section>
           )}
           {activeTab === "Support" && (
-            <div className="bg-white p-8 rounded-xl shadow-sm border mt-8">
-              <h2 className="font-semibold text-lg text-gray-800 mb-2">Support</h2>
-              <p className="text-gray-600">Contact support or find help resources here.</p>
-              {/* TODO: Add support/help content */}
+            <div className="mt-8 space-y-6">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-8 text-white">
+                <h2 className="text-2xl font-bold mb-2">Need Help?</h2>
+                <p className="text-red-100">We're here to assist you with your grievances and questions.</p>
+              </div>
+
+              {/* Contact Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Email Support */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Email Support</h3>
+                      <p className="text-sm text-gray-600 mb-3">Get help via email within 24 hours</p>
+                      <a 
+                        href="mailto:info@grievance.gov.np" 
+                        className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                      >
+                        info@grievance.gov.np
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone Support */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-green-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Phone Support</h3>
+                      <p className="text-sm text-gray-600 mb-3">Call us: Mon-Fri, 9 AM - 5 PM</p>
+                      <a 
+                        href="tel:+9779800000000" 
+                        className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-1"
+                      >
+                        +977 980-0000000
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Office Visit */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-purple-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Visit Office</h3>
+                      <p className="text-sm text-gray-600 mb-3">Walk-in support available</p>
+                      <p className="text-sm text-gray-700">
+                        Municipal Office, Ward 12<br />
+                        Kathmandu, Nepal
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Chat */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-orange-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Live Chat</h3>
+                      <p className="text-sm text-gray-600 mb-3">Chat with our support team</p>
+                      <button className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        Start Chat
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQ Section */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h3>
+                <div className="space-y-4">
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">How do I track my complaint?</span>
+                      <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="p-4 text-sm text-gray-600 leading-relaxed">
+                      You can track your complaint by going to the "My Grievances" section. Each complaint shows its current status and you can click "View Details" for more information.
+                    </div>
+                  </details>
+
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">How long does it take to resolve a complaint?</span>
+                      <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="p-4 text-sm text-gray-600 leading-relaxed">
+                      The average resolution time is 6-7 days. However, this varies depending on the complexity and urgency of your complaint. Urgent issues are prioritized and addressed faster.
+                    </div>
+                  </details>
+
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">Can I update my complaint after submission?</span>
+                      <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="p-4 text-sm text-gray-600 leading-relaxed">
+                      Currently, you cannot edit a submitted complaint directly. However, you can add additional information by contacting our support team via email or phone with your complaint ID.
+                    </div>
+                  </details>
+
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">What information do I need to file a complaint?</span>
+                      <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="p-4 text-sm text-gray-600 leading-relaxed">
+                      You need to provide your location details (District, Municipality, Ward), a clear description of your issue, and optionally attach any supporting documents or photos.
+                    </div>
+                  </details>
+
+                  <details className="group">
+                    <summary className="flex items-center justify-between cursor-pointer p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <span className="font-semibold text-gray-800">How will I be notified about updates?</span>
+                      <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="p-4 text-sm text-gray-600 leading-relaxed">
+                      You will receive notifications via email and SMS when your complaint status changes. Make sure your contact information is up to date in your profile.
+                    </div>
+                  </details>
+                </div>
+              </div>
+
+              {/* Help Resources */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Helpful Resources</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <a href="#" className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition group">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-gray-900">User Guide</p>
+                      <p className="text-xs text-gray-600">Learn how to use the system</p>
+                    </div>
+                  </a>
+
+                  <a href="#" className="flex items-center gap-3 p-4 bg-green-50 rounded-lg hover:bg-green-100 transition group">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-gray-900">Documentation</p>
+                      <p className="text-xs text-gray-600">View complete docs</p>
+                    </div>
+                  </a>
+
+                  <a href="#" className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition group">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="font-semibold text-gray-900">Video Tutorials</p>
+                      <p className="text-xs text-gray-600">Watch step-by-step guides</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </main>
+      
+      {/* View Details Modal */}
+      {showDetailsModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Complaint Details</h2>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+                title="Close modal"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Complaint ID and Status */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div>
+                  <span className="text-sm text-gray-500">Complaint ID</span>
+                  <p className="text-lg font-bold text-gray-900">#{selectedComplaint.id}</p>
+                </div>
+                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                  selectedComplaint.status_name === 'Resolved' ? 'bg-green-100 text-green-700' :
+                  selectedComplaint.status_name === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                  selectedComplaint.status_name === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {selectedComplaint.status_name || selectedComplaint.current_status || 'Pending'}
+                </span>
+              </div>
+
+              {/* Department and Urgency */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500">Department</span>
+                  <p className="text-base font-semibold text-gray-900">{selectedComplaint.department_name || selectedComplaint.department || 'General'}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Priority</span>
+                  <p className={`text-base font-semibold ${
+                    (selectedComplaint.urgency_name || selectedComplaint.urgency) === 'HIGHLY URGENT' ? 'text-red-600' :
+                    (selectedComplaint.urgency_name || selectedComplaint.urgency) === 'URGENT' ? 'text-orange-600' :
+                    'text-gray-600'
+                  }`}>
+                    {selectedComplaint.urgency_name || selectedComplaint.urgency || 'NORMAL'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500">Location</span>
+                  <p className="text-base text-gray-900">
+                    {selectedComplaint.municipality_name && selectedComplaint.district_name
+                      ? `${selectedComplaint.municipality_name}, ${selectedComplaint.district_name}`
+                      : selectedComplaint.municipality_name || selectedComplaint.district_name || 'Not specified'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Ward</span>
+                  <p className="text-base text-gray-900">
+                    {selectedComplaint.ward_name || (selectedComplaint.ward_number ? `Ward ${selectedComplaint.ward_number}` : '-')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date Submitted */}
+              <div>
+                <span className="text-sm text-gray-500">Date Submitted</span>
+                <p className="text-base text-gray-900">
+                  {selectedComplaint.created_at 
+                    ? new Date(selectedComplaint.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', month: 'long', day: 'numeric', 
+                        hour: '2-digit', minute: '2-digit' 
+                      })
+                    : 'N/A'}
+                </p>
+              </div>
+
+              {/* Full Message */}
+              <div>
+                <span className="text-sm text-gray-500">Description</span>
+                <p className="text-base text-gray-900 mt-2 p-4 bg-gray-50 rounded-lg leading-relaxed">
+                  {selectedComplaint.message || 'No description provided'}
+                </p>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Delete Complaint?</h2>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete complaint #{complaintToDelete}? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setComplaintToDelete(null);
+                  }}
+                  disabled={deleting}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-lg font-semibold transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-semibold transition disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Footer - Same as Landing Page */}
+      <footer className="bg-[#003C88] text-white py-12 mt-16">
+        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Left: Logo & Description */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/nepal-flag.gif" alt="Nepal Flag" className="h-7 w-7 object-contain rounded shadow" />
+              <h3 className="font-semibold text-lg">Citizen Grievance System</h3>
+            </div>
+            <p className="text-gray-200 text-sm leading-relaxed">A modern platform for citizens to voice their concerns and for local governance to respond efficiently.</p>
+          </div>
+          {/* Center: Contact Info */}
+          <div className="md:ml-20">
+            <h4 className="font-semibold text-lg mb-3">Contact Information</h4>
+            <ul className="space-y-3 text-sm text-gray-200">
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>+977-1-4211000</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>support@sambodhan.gov.np</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>Singha Durbar, Kathmandu, Nepal</span>
+              </li>
+            </ul>
+          </div>
+          {/* Right: Quick Links */}
+          <div>
+            <h4 className="font-semibold text-lg mb-3">Quick Links</h4>
+            <ul className="space-y-2 text-sm text-gray-200">
+              <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-white">Terms of Service</a></li>
+              <li><a href="#" className="hover:text-white">Help & Support</a></li>
+              <li><a href="#" className="hover:text-white">Accessibility</a></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Note */}
+        <div className="mt-10 border-t border-white/20 pt-6 text-center text-sm text-gray-200">
+          © 2025 Government of Nepal. All rights reserved.
+        </div>
+      </footer>
   {/* <DashboardFooter /> */}
     </div>
   );

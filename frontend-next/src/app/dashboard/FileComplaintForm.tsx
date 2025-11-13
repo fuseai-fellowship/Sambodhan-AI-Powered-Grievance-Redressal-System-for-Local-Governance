@@ -1,4 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { MapPin, FileText, ChevronDown, CheckCircle, Info, Send, AlertCircle } from 'lucide-react';
 // Types for location objects
 type District = {
   id: number;
@@ -122,45 +123,16 @@ export default function FileComplaintForm() {
       const deptData = await deptRes.json();
       const department = deptData?.label || 'General';
 
-      // 2. Fetch full ward, municipality, district objects
-      const wardObj = wards.find(w => w.id === Number(form.ward_id));
-      const municipalityObj = municipalities.find(m => m.id === Number(form.municipality_id));
-      const districtObj = districts.find(d => d.id === Number(form.district_id));
-
-      // 3. Build nested payload
+      // 2. Build payload with ward_id
       const now = new Date().toISOString();
       const payload = {
-  citizen_id: user?.id,
-  department,
-  urgency,
+        citizen_id: user?.id,
+        department,
+        urgency,
         current_status: form.current_status,
         message: form.message,
-        ward: {
-          ward_number: wardObj?.ward_number || 0,
-          municipality_id: municipalityObj?.id || 0,
-          id: wardObj?.id || 0,
-          is_active: wardObj?.is_active ?? true,
-          created_at: wardObj?.created_at || now,
-          updated_at: wardObj?.updated_at || now,
-          municipality: {
-            name: municipalityObj?.name || '',
-            district_id: districtObj?.id || 0,
-            id: municipalityObj?.id || 0,
-            is_active: municipalityObj?.is_active ?? true,
-            created_at: municipalityObj?.created_at || now,
-            updated_at: municipalityObj?.updated_at || now,
-            district: {
-              // ...existing code...
-              id: districtObj?.id || 0,
-              is_active: districtObj?.is_active ?? true,
-              created_at: districtObj?.created_at || now,
-              updated_at: districtObj?.updated_at || now
-            }
-          }
-        },
+        ward_id: Number(form.ward_id) || null,
         date_submitted: now,
-        created_at: now,
-        updated_at: now
       };
 
       console.log('Submitting payload:', payload);
@@ -197,39 +169,245 @@ export default function FileComplaintForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
-      <div className="w-full">
-        {districtsLoading ? (
-          <div className="text-gray-500 py-2">Loading districts...</div>
-        ) : districtsError ? (
-          <div className="text-red-600 py-2">{districtsError}</div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {success ? (
+          // Success Screen
+          <div className="bg-white rounded-xl shadow-md p-8 text-center border border-gray-100">
+            <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle className="w-12 h-12 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Complaint Submitted Successfully!</h2>
+            <p className="text-gray-600 mb-6">
+              Your grievance has been registered and will be reviewed by the concerned department shortly.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>What's Next?</strong> You'll receive updates on your registered mobile number and email. Track your complaint status in the "My Grievances" section.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setSuccess('');
+                setForm({
+                  department: '',
+                  urgency: '',
+                  current_status: 'Pending',
+                  message: '',
+                  ward_id: '',
+                  municipality_id: '',
+                  district_id: '',
+                });
+              }}
+              className="bg-[#E8214A] hover:bg-[#c81940] text-white px-8 py-3 rounded-lg font-semibold transition shadow-sm"
+            >
+              Submit Another Complaint
+            </button>
+          </div>
         ) : (
-          <select name="district_id" value={form.district_id} onChange={handleChange} className="w-full border p-2 rounded" required title="Select District">
-            <option value="">Select District</option>
-            {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+          // Form Screen
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+            {/* Header */}
+            <div className="bg-[#E8214A] p-8 text-white">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                  <FileText className="w-7 h-7" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">Submit Your Grievance</h1>
+                  <p className="text-red-100 mt-1 text-sm">We're here to help resolve your concerns</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Banner */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 m-6 rounded-r-md">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-semibold mb-1">Tips for a Better Response:</p>
+                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                    <li>Be specific about the location and issue</li>
+                    <li>Provide as many details as possible</li>
+                    <li>Include relevant dates and times if applicable</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+              {/* Location Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <MapPin className="w-5 h-5 text-[#E8214A]" />
+                  <h2 className="text-lg font-semibold text-gray-900">Location Details</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* District Dropdown */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      District <span className="text-red-600">*</span>
+                    </label>
+                    {districtsLoading ? (
+                      <div className="text-gray-500 py-3 px-4 border border-gray-200 rounded-lg bg-gray-50">
+                        Loading districts...
+                      </div>
+                    ) : districtsError ? (
+                      <div className="text-red-600 py-3 px-4 border border-red-200 rounded-lg bg-red-50">
+                        {districtsError}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <select
+                          name="district_id"
+                          value={form.district_id}
+                          onChange={handleChange}
+                          className="w-full border border-gray-200 p-3 pr-10 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white transition appearance-none cursor-pointer hover:border-gray-300"
+                          required
+                          title="Select your district"
+                        >
+                          <option value="">Select District</option>
+                          {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Municipality Dropdown */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Municipality <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="municipality_id"
+                        value={form.municipality_id}
+                        onChange={handleChange}
+                        className="w-full border border-gray-200 p-3 pr-10 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white transition appearance-none cursor-pointer hover:border-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                        required
+                        disabled={!form.district_id}
+                        title="Select your municipality"
+                      >
+                        <option value="">Select Municipality</option>
+                        {municipalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Ward Dropdown */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Ward <span className="text-red-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="ward_id"
+                        value={form.ward_id}
+                        onChange={handleChange}
+                        className="w-full border border-gray-200 p-3 pr-10 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white transition appearance-none cursor-pointer hover:border-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                        required
+                        disabled={!form.municipality_id}
+                        title="Select your ward"
+                      >
+                        <option value="">Select Ward</option>
+                        {wards.map(w => <option key={w.id} value={w.id}>Ward {w.ward_number}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200"></div>
+
+              {/* Description Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <FileText className="w-5 h-5 text-[#E8214A]" />
+                  <h2 className="text-lg font-semibold text-gray-900">Grievance Details</h2>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Describe Your Grievance <span className="text-red-600">*</span>
+                  </label>
+                  <textarea
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    placeholder="Please provide detailed information about your grievance including specific location, nature of the problem, and any relevant details..."
+                    className="w-full border border-gray-200 p-4 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#E8214A] focus:bg-white transition resize-none hover:border-gray-300"
+                    rows={6}
+                    required
+                  />
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Be as specific as possible for faster resolution</span>
+                    <span className="text-gray-400">{form.message.length} characters</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200"></div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                    <p className="text-red-800 text-sm font-medium">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-[#E8214A] hover:bg-[#c81940] text-white py-3 px-6 rounded-lg font-semibold transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      Submit Grievance
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Help Section */}
+              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Info className="w-5 h-5 text-[#E8214A]" />
+                  Need Help?
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  If you're facing any issues submitting your grievance or need assistance, please contact our support team.
+                </p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <span className="font-medium">Helpline:</span>
+                    <span className="text-[#E8214A] font-semibold">+977-1-XXXXXXX</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <span className="font-medium">Email:</span>
+                    <span className="text-[#E8214A] font-semibold">info@grievance.gov.np</span>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
         )}
       </div>
-
-      {form.district_id && (
-        <select name="municipality_id" value={form.municipality_id} onChange={handleChange} className="w-full border p-2 rounded" required title="Select Municipality">
-          <option value="">Select Municipality</option>
-          {municipalities.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-      )}
-
-      {form.municipality_id && (
-        <select name="ward_id" value={form.ward_id} onChange={handleChange} className="w-full border p-2 rounded" required title="Select Ward">
-          <option value="">Select Ward</option>
-          {wards.map(w => <option key={w.id} value={w.id}>Ward {w.ward_number}</option>)}
-        </select>
-      )}
-
-      <textarea name="message" value={form.message} onChange={handleChange} placeholder="Describe your grievance" className="w-full border p-2 rounded" required />
-      <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded">{loading ? 'Submitting...' : 'Submit Complaint'}</button>
-      {success && <p className="text-green-600">{success}</p>}
-      {error && <p className="text-red-600">{error}</p>}
-    </form>
+    </div>
   );
 }
 
