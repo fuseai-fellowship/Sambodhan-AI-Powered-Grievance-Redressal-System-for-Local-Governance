@@ -4,31 +4,11 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
-const ADMIN_ROLES = [
-  { label: 'Department Admin', value: 'department_admin' },
-  { label: 'Municipal Admin', value: 'municipal_admin' },
-  { label: 'Super Admin', value: 'super_admin' },
-];
-
 const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [adminRole, setAdminRole] = useState('department_admin');
-  const DEPARTMENT_LABELS = [
-    "Municipal Governance & Community Services",
-    "Education, Health & Social Welfare",
-    "Infrastructure, Utilities & Natural Resources",
-    "Security & Law Enforcement"
-  ];
-  const [department, setDepartment] = useState('');
-  const [municipalityId, setMunicipalityId] = useState('');
-  const [municipalities, setMunicipalities] = useState<any[]>([]);
-  const [districtId, setDistrictId] = useState('');
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
   const router = useRouter();
 
   // Check if user is already logged in
@@ -49,26 +29,6 @@ const AdminLoginPage: React.FC = () => {
       }
     }
   }, [router]);
-
-
-  useEffect(() => {
-    // Fetch districts (with trailing slash)
-    axios.get('/api/locations/districts/')
-      .then(res => setDistricts(res.data))
-      .catch(() => setDistricts([]));
-    // No need to fetch departments, use static labels
-  }, []);
-
-
-  useEffect(() => {
-    if (districtId) {
-      axios.get(`/api/locations/municipalities/?district_id=${districtId}`)
-        .then(res => setMunicipalities(res.data))
-        .catch(() => setMunicipalities([]));
-    } else {
-      setMunicipalities([]);
-    }
-  }, [districtId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,101 +54,83 @@ const AdminLoginPage: React.FC = () => {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const payload: any = {
-        name,
-        email,
-        password,
-        role: adminRole,
-        department,
-        municipality_id: municipalityId || null,
-        district_id: districtId || null,
-      };
-      // Register admin
-      await axios.post('/api/admins/register', payload);
-      // Auto-login after registration
-      const loginRes = await axios.post('/api/admins/login', {
-        email,
-        password,
-      });
-      const { access_token, admin } = loginRes.data;
-      if (!admin || !admin.id) {
-        setError('Login failed after registration.');
-        return;
-      }
-      Cookies.set('sambodhan_token', access_token, { expires: 7 });
-      Cookies.set('sambodhan_admin_user', JSON.stringify(admin), { expires: 7 });
-      router.replace(`/admin-dashboard?role=${admin.role}&user_id=${admin.id}`);
-    } catch (err: any) {
-      const errMsg = err?.response?.data?.detail || err?.message;
-      setError(typeof errMsg === 'string' ? errMsg : 'Registration failed.');
-    }
-  };
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <form className="bg-white p-8 rounded-lg shadow-md w-full max-w-md" onSubmit={isRegister ? handleRegister : handleLogin}>
-        <h2 className="text-2xl font-semibold mb-2">Admin Access</h2>
-        <p className="mb-6 text-gray-600">Sign in with your administrative credentials</p>
-        <div className="flex mb-6">
-          <button type="button" className={`flex-1 py-2 rounded-l-full font-medium ${!isRegister ? 'bg-gray-100' : ''}`} onClick={() => setIsRegister(false)}>Login</button>
-          <button type="button" className={`flex-1 py-2 rounded-r-full font-medium ${isRegister ? 'bg-gray-100' : ''}`} onClick={() => setIsRegister(true)}>Register</button>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <form className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200" onSubmit={handleLogin}>
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#003C88] to-[#0052b3] rounded-full flex items-center justify-center shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h2>
+          <p className="text-gray-600">Sign in to access the administrative dashboard</p>
         </div>
-        {isRegister && (
-          <>
-            <label className="block mb-2 text-sm font-medium">Full Name</label>
-            <input type="text" className="w-full mb-4 px-4 py-2 border rounded" value={name} onChange={e => setName(e.target.value)} required placeholder="Enter your name" title="Full Name" />
-          </>
-        )}
-        <label className="block mb-2 text-sm font-medium">Email</label>
-        <input type="email" className="w-full mb-4 px-4 py-2 border rounded" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Enter your email" title="Email" />
-        <label className="block mb-2 text-sm font-medium">Password</label>
-        <input type="password" className="w-full mb-4 px-4 py-2 border rounded" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" title="Password" />
-        <label className="block mb-2 text-sm font-medium">Admin Role</label>
-        <select className="w-full mb-4 px-4 py-2 border rounded" value={adminRole} onChange={e => setAdminRole(e.target.value)} title="Admin Role">
-          {ADMIN_ROLES.map((role: {label: string, value: string}) => (
-            <option key={role.value + '-' + role.label} value={role.value}>{role.label}</option>
-          ))}
-        </select>
-        {isRegister && (
-          <>
-            <label className="block mb-2 text-sm font-medium">District</label>
-            <select className="w-full mb-4 px-4 py-2 border rounded" value={districtId} onChange={e => setDistrictId(e.target.value)} required title="District">
-              <option value="">Select your district</option>
-              {districts.map((dist: any) => (
-                <option key={dist.id || dist} value={dist.id || dist}>{dist.name || dist}</option>
-              ))}
-            </select>
-            <label className="block mb-2 text-sm font-medium">Municipality</label>
-            <select className="w-full mb-4 px-4 py-2 border rounded" value={municipalityId} onChange={e => setMunicipalityId(e.target.value)} required title="Municipality">
-              <option value="">Select your municipality</option>
-              {municipalities.map((mun: any) => (
-                <option key={mun.id || mun} value={mun.id || mun}>{mun.name || mun}</option>
-              ))}
-            </select>
-            <label className="block mb-2 text-sm font-medium">Department</label>
-            <select className="w-full mb-4 px-4 py-2 border rounded" value={department} onChange={e => setDepartment(e.target.value)} required title="Department">
-              <option value="">Select your department</option>
-              {DEPARTMENT_LABELS.map(label => (
-                <option key={label} value={label}>{label}</option>
-              ))}
-            </select>
-          </>
-        )}
-        <div className="flex items-center mb-4">
-          <label className="flex items-center mr-2">
-            <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="mr-2" title="Remember me" />
-            <span className="text-sm">Remember me</span>
-          </label>
-          <a href="#" className="ml-auto text-sm text-red-500">Forgot password?</a>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block mb-2 text-sm font-semibold text-gray-700">Email Address</label>
+            <input 
+              type="email" 
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              required 
+              placeholder="admin@example.com" 
+            />
+          </div>
+          
+          <div>
+            <label className="block mb-2 text-sm font-semibold text-gray-700">Password</label>
+            <input 
+              type="password" 
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              required 
+              placeholder="Enter your password" 
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <label className="flex items-center">
+              <input 
+                type="checkbox" 
+                checked={rememberMe} 
+                onChange={e => setRememberMe(e.target.checked)} 
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
+              />
+              <span className="ml-2 text-sm text-gray-700">Remember me</span>
+            </label>
+            <a href="#" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Forgot password?</a>
+          </div>
+          
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
+          )}
+          
+          <button 
+            type="submit" 
+            className="w-full py-3 bg-gradient-to-r from-[#003C88] to-[#0052b3] text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:from-[#002a66] hover:to-[#003c88] transition-all transform hover:scale-[1.02]"
+          >
+            Sign In
+          </button>
         </div>
-        {error && <div className="text-red-500 mb-2">{error}</div>}
-        <button type="submit" className="w-full py-2 bg-red-600 text-white rounded font-semibold">{isRegister ? 'Register as Admin' : 'Login as Admin'}</button>
-        <div className="mt-6 text-center text-sm">
-          Are you a citizen? <a href="/citizen/login" className="text-red-600">Citizen Login</a>
+        
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <p className="text-sm text-gray-600">
+            Are you a citizen?{' '}
+            <a href="/citizen/login" className="text-blue-600 hover:text-blue-800 font-semibold">
+              Citizen Login
+            </a>
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Admin registration is restricted to Super Admins only
+          </p>
         </div>
       </form>
     </div>
