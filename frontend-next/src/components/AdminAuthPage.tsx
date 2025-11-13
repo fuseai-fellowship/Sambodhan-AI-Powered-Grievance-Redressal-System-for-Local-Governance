@@ -54,6 +54,12 @@ export const AdminAuthPage: React.FC<AdminAuthPageProps> = ({ onLogin }) => {
             </select>
           </div>
         )}
+        {/* Show info message for Municipal Admin and Super Admin */}
+        {(adminType === 'municipal' || adminType === 'super') && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+            <strong>Note:</strong> As a {adminType === 'municipal' ? 'Municipal Admin' : 'Super Admin'}, you have access to all departments.
+          </div>
+        )}
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Admin ID</label>
           <input

@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { FileText, TrendingUp, MessageSquare, Shield, Phone, Mail, MapPin } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -27,7 +28,9 @@ export default function LandingPage() {
           <a href="/auth/login">
             <Button variant="outline" className="border border-gray-300 px-5 py-2 rounded-lg font-semibold text-gray-700 hover:text-red-600 hover:border-red-600 transition">Citizen Login</Button>
           </a>
-          <Button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-semibold transition">Admin Portal</Button>
+          <a href="/auth/signup">
+            <Button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-semibold transition">Register</Button>
+          </a>
         </div>
       </nav>
 
@@ -70,39 +73,48 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
           {[
             {
-              icon: "📝",
+              icon: FileText,
               title: "Easy Registration",
               description: "Submit grievances quickly with our user-friendly form",
               borderColor: "border-t-[#E8214A]",
+              iconColor: "text-[#E8214A]",
             },
             {
-              icon: "📈",
+              icon: TrendingUp,
               title: "Real-time Tracking",
               description: "Monitor the status and progress of your complaints",
               borderColor: "border-t-[#002F6C]",
+              iconColor: "text-[#002F6C]",
             },
             {
-              icon: "📨",
+              icon: MessageSquare,
               title: "Direct Communication",
               description: "Receive updates and messages from administrators",
               borderColor: "border-t-[#E6B600]",
+              iconColor: "text-[#E6B600]",
             },
             {
-              icon: "🛡️",
+              icon: Shield,
               title: "Secure & Transparent",
               description: "Your data is protected and processes are transparent",
               borderColor: "border-t-[#E8214A]",
+              iconColor: "text-[#E8214A]",
             },
-          ].map((feature, idx) => (
-            <div
-              key={idx}
-              className={`bg-white shadow-sm rounded-lg border border-gray-200 border-t-4 ${feature.borderColor} p-6 text-left hover:shadow-md transition-shadow`}
-            >
-              <div className="text-3xl mb-3">{feature.icon}</div>
-              <h3 className="font-semibold text-gray-900 text-lg mb-2">{feature.title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
-            </div>
-          ))}
+          ].map((feature, idx) => {
+            const IconComponent = feature.icon;
+            return (
+              <div
+                key={idx}
+                className={`bg-white shadow-sm rounded-lg border border-gray-200 border-t-4 ${feature.borderColor} p-6 flex flex-col items-center text-center hover:shadow-md transition-shadow`}
+              >
+                <div className={`mb-4 ${feature.iconColor} bg-gray-50 rounded-full p-4`}>
+                  <IconComponent className="w-8 h-8" strokeWidth={1.5} />
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">{feature.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -175,37 +187,18 @@ export default function LandingPage() {
           {/* Center: Contact Info */}
           <div className="md:ml-20">
             <h4 className="font-semibold text-lg mb-3">Contact Information</h4>
-            <ul className="space-y-2 text-sm text-gray-200">
-                <li>
-                  <span className="inline-block align-middle mr-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                      <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21c1.21.49 2.53.76 3.88.76a1 1 0 011 1v3.5a1 1 0 01-1 1C10.07 22 2 13.93 2 4.5a1 1 0 011-1H6.5a1 1 0 011 1c0 1.35.27 2.67.76 3.88a1 1 0 01-.21 1.11l-2.2 2.2z" />
-                    </svg>
-                  </span>
-                  +977-1-XXXXXXX
-                </li>
-              <li>
-                <span className="inline-block align-middle mr-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18">
-                    <rect width="512" height="512" rx="80" fill="#ECEFF1"/>
-                    <polygon points="256,296 32,144 32,432 480,432 480,144" fill="#D32F2F"/>
-                    <polygon points="256,296 32,144 256,296 480,144" fill="#F44336"/>
-                    <polygon points="256,296 32,432 256,296 480,432" fill="#FFFFFF"/>
-                  </svg>
-                </span>
-                info@grievance.gov.np
+            <ul className="space-y-3 text-sm text-gray-200">
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>+977-1-4211000</span>
               </li>
-              <li>
-                <span className="inline-block align-middle mr-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18">
-                    <circle cx="256" cy="256" r="256" fill="#D2A4BC"/>
-                    <circle cx="256" cy="342" r="80" fill="#E6E6E6" stroke="#222" strokeWidth="8"/>
-                    <path d="M256 352c-44-80-80-144-80-184a80 80 0 01160 0c0 40-36 104-80 184z" fill="#F44336" stroke="#222" strokeWidth="8"/>
-                    <circle cx="256" cy="172" r="32" fill="#FFF" stroke="#222" strokeWidth="8"/>
-                    <circle cx="256" cy="172" r="16" fill="#F44336" stroke="#222" strokeWidth="8"/>
-                  </svg>
-                </span>
-                Kathmandu, Nepal
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>support@sambodhan.gov.np</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                <span>Singha Durbar, Kathmandu, Nepal</span>
               </li>
             </ul>
           </div>
