@@ -5,6 +5,28 @@ other_files/
 
 .gitignore
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Screenshots and images (exclude from version control)
+*.png
+*.jpg
+*.jpeg
+*.gif
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!public/**/*.png
+!public/**/*.jpg
+
+# Temporary and misc files
+*.json.bak
+layout.builder*.json
+=*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

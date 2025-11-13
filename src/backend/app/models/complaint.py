@@ -131,12 +131,13 @@ class MisclassifiedComplaint(Base):
         nullable=True
     )
 
-    reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    reported_by_admin_id = Column(Integer, ForeignKey("admins.id", ondelete="SET NULL"))
     reviewed = Column(Boolean, default=False)
     reviewed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     complaint = relationship("Complaint", back_populates="misclassifications")
-    reported_by_user = relationship("User", back_populates="misclassifications_reported")
+    # Note: Change relationship name if you add this to Admin model
+    # reported_by_admin = relationship("Admin", back_populates="misclassifications_reported")
     
 

@@ -34,7 +34,7 @@ def _load_cache(name: str) -> Optional[Dict[str, Any]]:
 # -------------------------
 # Simple aggregate endpoints
 # -------------------------
-def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None) -> Dict[str, Any]:
+def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None, district_id: Optional[int] = None) -> Dict[str, Any]:
     query = db.query(models.Complaint)
     if ward_id:
         query = query.filter(models.Complaint.ward_id == ward_id)
@@ -43,6 +43,12 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
     if municipality_id:
         query = query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         query = query.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        # For district-level filtering (Super Admin), join through Ward -> Municipality -> District
+        query = query.filter(models.Complaint.ward_id.isnot(None))  # Exclude complaints without ward_id
+        query = query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+        query = query.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id)
+        query = query.filter(models.Municipality.district_id == district_id)
     total = query.count()
 
     urg_query = db.query(models.Complaint.urgency, func.count(models.Complaint.id))
@@ -53,6 +59,11 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
     if municipality_id:
         urg_query = urg_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         urg_query = urg_query.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        urg_query = urg_query.filter(models.Complaint.ward_id.isnot(None))  # Exclude complaints without ward_id
+        urg_query = urg_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+        urg_query = urg_query.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id)
+        urg_query = urg_query.filter(models.Municipality.district_id == district_id)
     urg_rows = urg_query.group_by(models.Complaint.urgency).all()
     by_urgency = {u if u is not None else "Unspecified": int(c) for u, c in urg_rows}
 
@@ -70,6 +81,11 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
     if municipality_id:
         dept_query = dept_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         dept_query = dept_query.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        dept_query = dept_query.filter(models.Complaint.ward_id.isnot(None))  # Exclude complaints without ward_id
+        dept_query = dept_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+        dept_query = dept_query.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id)
+        dept_query = dept_query.filter(models.Municipality.district_id == district_id)
     dept_rows = dept_query.group_by(models.Complaint.department).all()
     by_department = {}
     for d, total, resolved, rate in dept_rows:
@@ -88,6 +104,11 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
     if municipality_id:
         status_query = status_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         status_query = status_query.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        status_query = status_query.filter(models.Complaint.ward_id.isnot(None))  # Exclude complaints without ward_id
+        status_query = status_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+        status_query = status_query.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id)
+        status_query = status_query.filter(models.Municipality.district_id == district_id)
     status_rows = status_query.group_by(models.Complaint.current_status).all()
     by_status = {}
     for s, c in status_rows:
@@ -105,16 +126,99 @@ def summary_counts(db: Session, ward_id: Optional[int] = None, department: Optio
         q = q.filter(models.Complaint.department == department)
     if municipality_id:
         q = q.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        q = q.filter(models.Municipality.district_id == district_id)
     q = q.group_by(func.coalesce(models.District.name, "Unspecified"))
     dist_rows = q.all()
     by_district = {name: int(cnt) for name, cnt in dist_rows}
 
+    # By municipality (for district-level view)
+    q = db.query(func.coalesce(models.Municipality.name, "Unspecified"), func.count(models.Complaint.id))
+    q = q.select_from(models.Complaint)
+    q = q.join(models.Ward, models.Complaint.ward_id == models.Ward.id, isouter=True)
+    q = q.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id, isouter=True)
+    if ward_id:
+        q = q.filter(models.Complaint.ward_id == ward_id)
+    if department:
+        q = q.filter(models.Complaint.department == department)
+    if municipality_id:
+        q = q.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        # For district-level, group by all municipalities in that district
+        q = q.join(models.District, models.Municipality.district_id == models.District.id, isouter=True)
+        q = q.filter(models.Municipality.district_id == district_id)
+    q = q.group_by(func.coalesce(models.Municipality.name, "Unspecified"))
+    mun_rows = q.all()
+    by_municipality = {name: int(cnt) for name, cnt in mun_rows}
+
+    # Detailed breakdown by municipality (status and urgency) for Super Admin
+    municipality_details = {}
+    if district_id:
+        # Get all municipalities in the district
+        mun_list_query = db.query(models.Municipality).filter(models.Municipality.district_id == district_id)
+        municipalities = mun_list_query.all()
+        
+        for mun in municipalities:
+            # Status breakdown for this municipality
+            mun_status_query = db.query(models.Complaint.current_status, func.count(models.Complaint.id))
+            mun_status_query = mun_status_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+            mun_status_query = mun_status_query.filter(models.Ward.municipality_id == mun.id)
+            if department:
+                mun_status_query = mun_status_query.filter(models.Complaint.department == department)
+            mun_status_rows = mun_status_query.group_by(models.Complaint.current_status).all()
+            mun_by_status = {s.title() if s else "Unspecified": int(c) for s, c in mun_status_rows}
+            
+            # Urgency breakdown for this municipality
+            mun_urg_query = db.query(models.Complaint.urgency, func.count(models.Complaint.id))
+            mun_urg_query = mun_urg_query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+            mun_urg_query = mun_urg_query.filter(models.Ward.municipality_id == mun.id)
+            if department:
+                mun_urg_query = mun_urg_query.filter(models.Complaint.department == department)
+            mun_urg_rows = mun_urg_query.group_by(models.Complaint.urgency).all()
+            mun_by_urgency = {u if u is not None else "Unspecified": int(c) for u, c in mun_urg_rows}
+            
+            municipality_details[mun.name] = {
+                "total": by_municipality.get(mun.name, 0),
+                "by_status": mun_by_status,
+                "by_urgency": mun_by_urgency
+            }
+
+    # Count team members (department admins in the same municipality/department/district)
+    from app.models.admin import Admin
+    team_members_count = 0
+    if municipality_id or department or district_id:
+        admin_query = db.query(Admin)
+        if municipality_id:
+            admin_query = admin_query.filter(Admin.municipality_id == municipality_id)
+        elif district_id:
+            # For district-level (Super Admin), count all department admins in the district
+            # Join through Municipality to get district_id since department admins
+            # may not have district_id directly populated
+            admin_query = admin_query.join(
+                models.Municipality, 
+                Admin.municipality_id == models.Municipality.id
+            ).filter(models.Municipality.district_id == district_id)
+        if department:
+            admin_query = admin_query.filter(Admin.department == department)
+        # Only count department admins
+        admin_query = admin_query.filter(Admin.role == "department_admin")
+        team_members_count = admin_query.count()
+        
+        # Debug logging for super admin
+        if district_id:
+            print(f"[Analytics] Team members count for district {district_id}: {team_members_count}")
+            print(f"[Analytics] Total complaints for district {district_id}: {total}")
+
     return {
+        "total": int(total),  # Add total as alias for total_complaints
         "total_complaints": int(total),
         "by_urgency": by_urgency,
         "by_department": by_department,
         "by_status": by_status,
         "by_district": by_district,
+        "by_municipality": by_municipality,
+        "municipality_details": municipality_details,
+        "team_members": team_members_count,
     }
 
 
@@ -176,6 +280,7 @@ def _grouped_trend(
     ward_id: Optional[int] = None,
     department: Optional[str] = None,
     municipality_id: Optional[int] = None,
+    district_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Generic trend aggregator using date_trunc(trunc, date_submitted).
@@ -195,6 +300,12 @@ def _grouped_trend(
     if municipality_id:
         query = query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
         query = query.filter(models.Ward.municipality_id == municipality_id)
+    elif district_id:
+        # Join Ward -> Municipality for district filtering
+        query = query.filter(models.Complaint.ward_id.isnot(None))  # Exclude complaints without ward_id
+        query = query.join(models.Ward, models.Complaint.ward_id == models.Ward.id)
+        query = query.join(models.Municipality, models.Ward.municipality_id == models.Municipality.id)
+        query = query.filter(models.Municipality.district_id == district_id)
     rows = query.group_by(truncated, models.Complaint.urgency, models.Complaint.department).order_by(truncated).all()
 
     # Build mapping from period label -> totals and by categories
@@ -236,16 +347,16 @@ def _grouped_trend(
     }
 
 
-def trends_daily(db: Session, days: int = 30, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None) -> Dict[str, Any]:
-    return _grouped_trend(db, "day", _period_labels_for_days, "date", days, ward_id, department, municipality_id)
+def trends_daily(db: Session, days: int = 30, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None, district_id: Optional[int] = None) -> Dict[str, Any]:
+    return _grouped_trend(db, "day", _period_labels_for_days, "date", days, ward_id, department, municipality_id, district_id)
 
 
-def trends_weekly(db: Session, weeks: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None) -> Dict[str, Any]:
-    return _grouped_trend(db, "week", _period_labels_for_weeks, "week", weeks, ward_id, department, municipality_id)
+def trends_weekly(db: Session, weeks: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None, district_id: Optional[int] = None) -> Dict[str, Any]:
+    return _grouped_trend(db, "week", _period_labels_for_weeks, "week", weeks, ward_id, department, municipality_id, district_id)
 
 
-def trends_monthly(db: Session, months: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None) -> Dict[str, Any]:
-    return _grouped_trend(db, "month", _period_labels_for_months, "month", months, ward_id, department, municipality_id)
+def trends_monthly(db: Session, months: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None, district_id: Optional[int] = None) -> Dict[str, Any]:
+    return _grouped_trend(db, "month", _period_labels_for_months, "month", months, ward_id, department, municipality_id, district_id)
 
 
 # -------------------------
@@ -273,26 +384,38 @@ def recompute_all(db: Session, days: int = 30, weeks: int = 12, months: int = 12
     return out
 
 
-def get_cached_or_compute(db: Session, name: str, days: int = 30, weeks: int = 12, months: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None) -> Dict[str, Any]:
-    cached = _load_cache(name)
+def get_cached_or_compute(db: Session, name: str, days: int = 30, weeks: int = 12, months: int = 12, ward_id: Optional[int] = None, department: Optional[str] = None, municipality_id: Optional[int] = None, district_id: Optional[int] = None) -> Dict[str, Any]:
+    # Disable caching for filtered queries to prevent wrong data being served
+    # Only use cache if no filters are applied
+    use_cache = not any([ward_id, department, municipality_id, district_id])
+    
+    cached = None
+    if use_cache:
+        cached = _load_cache(name)
+    
     if cached:
+        print(f"[Analytics] Returning cached data for {name}")
         return cached
+    
+    print(f"[Analytics] Computing fresh data for {name} with filters: ward_id={ward_id}, department={department}, municipality_id={municipality_id}, district_id={district_id}")
 
     if name == "summary":
-        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id)}
+        result = {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id)}
+        print(f"[Analytics] Summary computed - total: {result['data'].get('total')}, team_members: {result['data'].get('team_members')}")
+        return result
     if name == "by_urgency":
-        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id).get("by_urgency", {})}
+        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id).get("by_urgency", {})}
     if name == "by_department":
-        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id).get("by_department", {})}
+        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id).get("by_department", {})}
     if name == "by_status":
-        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id).get("by_status", {})}
+        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id).get("by_status", {})}
     if name == "by_district":
-        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id).get("by_district", {})}
+        return {"data": summary_counts(db, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id).get("by_district", {})}
     if name == "trends_daily":
-        return {"data": trends_daily(db, days=days, ward_id=ward_id, department=department, municipality_id=municipality_id)}
+        return {"data": trends_daily(db, days=days, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id)}
     if name == "trends_weekly":
-        return {"data": trends_weekly(db, weeks=weeks, ward_id=ward_id, department=department, municipality_id=municipality_id)}
+        return {"data": trends_weekly(db, weeks=weeks, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id)}
     if name == "trends_monthly":
-        return {"data": trends_monthly(db, months=months, ward_id=ward_id, department=department, municipality_id=municipality_id)}
+        return {"data": trends_monthly(db, months=months, ward_id=ward_id, department=department, municipality_id=municipality_id, district_id=district_id)}
 
     raise ValueError(f"Unknown analytics name: {name}")

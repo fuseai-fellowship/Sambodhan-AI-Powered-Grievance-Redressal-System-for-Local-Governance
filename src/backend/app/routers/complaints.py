@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, or_
 from app.core.database import SessionLocal
@@ -341,7 +341,10 @@ def get_complaints(
     ward_id: int | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    query = db.query(models.Complaint)
+    # Eagerly load ward with nested municipality and district
+    query = db.query(models.Complaint).options(
+        joinedload(models.Complaint.ward).joinedload(models.Ward.municipality).joinedload(models.Municipality.district)
+    )
 
     # Apply optional filters
     if department is not None:
@@ -368,7 +371,10 @@ def get_complaints(
 # GET: Fetch a single complaint by ID
 @router.get("/{complaint_id}", response_model=schemas.ComplaintRead)
 def get_complaint(complaint_id: int, db: Session = Depends(get_db)):
-    complaint = db.query(models.Complaint).filter(models.Complaint.id == complaint_id).first()
+    # Eagerly load ward with nested municipality and district
+    complaint = db.query(models.Complaint).options(
+        joinedload(models.Complaint.ward).joinedload(models.Ward.municipality).joinedload(models.Municipality.district)
+    ).filter(models.Complaint.id == complaint_id).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     return complaint

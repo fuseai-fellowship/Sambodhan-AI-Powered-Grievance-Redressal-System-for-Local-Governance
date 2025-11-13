@@ -11,7 +11,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { MapPin, Zap, Trash2, AlertTriangle } from "lucide-react";
+import { MapPin, Zap, Trash2, AlertTriangle, Droplet, Construction, TreeDeciduous, Users } from "lucide-react";
 
 type Complaint = {
   id: number;
@@ -24,9 +24,10 @@ type Complaint = {
 
 interface DashboardInsightsProps {
   complaints: Complaint[];
+  onQuickAction?: (actionName: string) => void;
 }
 
-const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints }) => {
+const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints, onQuickAction }) => {
   // Example: Build activityData from complaints by month
   const monthMap: { [key: string]: { Resolved: number; Submitted: number } } = {};
   complaints.forEach((c) => {
@@ -47,11 +48,56 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints }) => 
   const colors = ["#dc2626", "#1e3a8a", "#16a34a", "#f59e0b", "#6366f1", "#0ea5e9", "#f43f5e"];
   const categoryData = Object.entries(categoryCount).map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }));
 
+  // Dynamic quick actions based on common issue types
   const quickActions = [
-    { name: "Report Pothole", icon: <MapPin className="w-5 h-5" /> },
-    { name: "Street Light Issue", icon: <Zap className="w-5 h-5" /> },
-    { name: "Garbage Collection", icon: <Trash2 className="w-5 h-5" /> },
-    { name: "Water Problem", icon: <AlertTriangle className="w-5 h-5" /> },
+    { 
+      name: "Report Pothole", 
+      icon: <Construction className="w-5 h-5" />,
+      color: "bg-orange-50 hover:bg-orange-100 border-orange-200",
+      iconColor: "text-orange-600"
+    },
+    { 
+      name: "Street Light Issue", 
+      icon: <Zap className="w-5 h-5" />,
+      color: "bg-yellow-50 hover:bg-yellow-100 border-yellow-200",
+      iconColor: "text-yellow-600"
+    },
+    { 
+      name: "Garbage Collection", 
+      icon: <Trash2 className="w-5 h-5" />,
+      color: "bg-green-50 hover:bg-green-100 border-green-200",
+      iconColor: "text-green-600"
+    },
+    { 
+      name: "Water Problem", 
+      icon: <Droplet className="w-5 h-5" />,
+      color: "bg-blue-50 hover:bg-blue-100 border-blue-200",
+      iconColor: "text-blue-600"
+    },
+    { 
+      name: "Road Damage", 
+      icon: <MapPin className="w-5 h-5" />,
+      color: "bg-red-50 hover:bg-red-100 border-red-200",
+      iconColor: "text-red-600"
+    },
+    { 
+      name: "Tree Cutting Request", 
+      icon: <TreeDeciduous className="w-5 h-5" />,
+      color: "bg-emerald-50 hover:bg-emerald-100 border-emerald-200",
+      iconColor: "text-emerald-600"
+    },
+    { 
+      name: "Noise Complaint", 
+      icon: <AlertTriangle className="w-5 h-5" />,
+      color: "bg-purple-50 hover:bg-purple-100 border-purple-200",
+      iconColor: "text-purple-600"
+    },
+    { 
+      name: "Community Issue", 
+      icon: <Users className="w-5 h-5" />,
+      color: "bg-indigo-50 hover:bg-indigo-100 border-indigo-200",
+      iconColor: "text-indigo-600"
+    },
   ];
 
   return (
@@ -104,17 +150,18 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints }) => 
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl border p-5 mt-6 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-800">Quick Actions</h3>
+      <div className="bg-white rounded-xl border p-6 mt-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-800 mb-1">Quick Actions</h3>
         <p className="text-gray-500 text-sm mb-5">Common grievance types for faster submission</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {quickActions.map((action, idx) => (
             <button
               key={idx}
-              className="flex flex-col items-center justify-center border rounded-xl py-6 hover:shadow-md transition"
+              onClick={() => onQuickAction?.(action.name)}
+              className={`flex flex-col items-center justify-center border ${action.color} rounded-lg py-4 px-3 hover:shadow-md transition-all duration-200 transform hover:scale-105 active:scale-95`}
             >
-              <div className="text-gray-600 mb-2">{action.icon}</div>
-              <span className="text-sm font-semibold text-gray-800">{action.name}</span>
+              <div className={`${action.iconColor} mb-2`}>{action.icon}</div>
+              <span className="text-xs font-semibold text-gray-800 text-center leading-tight">{action.name}</span>
             </button>
           ))}
         </div>

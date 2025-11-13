@@ -14,6 +14,7 @@ def get_filters(request: Request):
     ward_id = request.query_params.get("ward_id")
     department = request.query_params.get("department")
     municipality_id = request.query_params.get("municipality_id")
+    district_id = request.query_params.get("district_id")
     filters = {}
     if ward_id:
         filters["ward_id"] = int(ward_id)
@@ -21,6 +22,8 @@ def get_filters(request: Request):
         filters["department"] = department
     if municipality_id:
         filters["municipality_id"] = int(municipality_id)
+    if district_id:
+        filters["district_id"] = int(district_id)
     return filters
 
 # Test endpoint
@@ -115,6 +118,7 @@ async def api_quality_metrics(request: Request, db: Session = Depends(get_db)):
     """Get quality metrics over time (monthly trend)"""
     try:
         filters = get_filters(request)
+        print(f"[Quality Metrics] Filters: {filters}")
         trend_result = analytics_service.get_cached_or_compute(db, "trends_monthly", months=12, **filters)
         
         # Handle nested data structure
@@ -125,6 +129,7 @@ async def api_quality_metrics(request: Request, db: Session = Depends(get_db)):
         
         # Ensure trend is a dict
         if not isinstance(trend, dict):
+            print("[Quality Metrics] Trend is not a dict, returning empty array")
             return []
         
         # Transform to chart format
@@ -134,12 +139,14 @@ async def api_quality_metrics(request: Request, db: Session = Depends(get_db)):
                 total = trend.get("total_by_period", {}).get(month, 0)
                 chart.append({"month": month, "value": total})
         
+        print(f"[Quality Metrics] Returning {len(chart)} data points")
         return chart
     except Exception as e:
         import traceback
-        print(f"Error in quality-metrics: {str(e)}")
-        print(traceback.format_exc())
-        return []
+        error_trace = traceback.format_exc()
+        print(f"[Quality Metrics] Error: {str(e)}")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"Quality metrics error: {str(e)}")
 
 
 @router.get("/performance")
@@ -147,11 +154,12 @@ async def api_performance(request: Request, db: Session = Depends(get_db)):
     """Get performance metrics comparing department vs city averages"""
     try:
         filters = get_filters(request)
+        print(f"[Performance] Filters: {filters}")
         summary = analytics_service.get_cached_or_compute(db, "summary", **filters)
         
         # Calculate basic performance metrics
         data = summary.get("data", summary)
-        total = data.get("total_complaints", 0)
+        total = data.get("total_complaints", 0) or data.get("total", 0)
         resolved = data.get("by_status", {}).get("Resolved", 0)
         
         performance = {
@@ -164,9 +172,14 @@ async def api_performance(request: Request, db: Session = Depends(get_db)):
             "firstTimeResolution": 0,  # Placeholder
             "cityFirstTimeResolution": 0,
         }
+        print(f"[Performance] Returning metrics: {performance}")
         return performance
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[Performance] Error: {str(e)}")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"Performance metrics error: {str(e)}")
 
 
 # Trends endpoints
@@ -178,12 +191,20 @@ async def api_trends_daily(
 ):
     try:
         filters = get_filters(request)
+        print(f"[Trends Daily] Filters: {filters}, Days: {days}")
         if days == 30:
-            return analytics_service.get_cached_or_compute(db, "trends_daily", days=days, **filters)
-        computed = analytics_service.trends_daily(db, days=days, **filters)
-        return {"data": computed}
+            result = analytics_service.get_cached_or_compute(db, "trends_daily", days=days, **filters)
+        else:
+            computed = analytics_service.trends_daily(db, days=days, **filters)
+            result = {"data": computed}
+        print(f"[Trends Daily] Returning {len(result.get('data', []))} data points")
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[Trends Daily] Error: {str(e)}")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"Daily trends error: {str(e)}")
 
 @router.get("/trends/weekly", response_model=Dict[str, Any])
 async def api_trends_weekly(
@@ -223,10 +244,16 @@ def api_recompute_all(
     db: Session = Depends(get_db),
 ):
     try:
+        print(f"[Recompute] Starting recompute with days={days}, weeks={weeks}, months={months}")
         out = analytics_service.recompute_all(db, days=days, weeks=weeks, months=months)
+        print(f"[Recompute] Success: {out}")
         return out
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[Recompute] Error: {str(e)}")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"Recompute error: {str(e)}")
 
 
 @router.get("/export")

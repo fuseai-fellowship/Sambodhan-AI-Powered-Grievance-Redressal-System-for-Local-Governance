@@ -9,15 +9,6 @@ export default function SummaryCards({ data, loading }) {
 
   const cards = [
     { 
-      label: "Assigned to Me", 
-      value: data?.assignedToMe ?? 0,
-      icon: User,
-      color: "blue",
-      bgColor: "bg-blue-50",
-      textColor: "text-blue-600",
-      iconColor: "text-blue-500"
-    },
-    { 
       label: "Pending", 
       value: data?.by_status?.Pending ?? 0,
       icon: Clock,
@@ -47,14 +38,13 @@ export default function SummaryCards({ data, loading }) {
       sub: data?.resolvedChange 
     },
     { 
-      label: "Team Rating", 
-      value: data?.teamRating ?? 0,
+      label: "Total Cases", 
+      value: data?.total ?? data?.total_complaints ?? 0,
       icon: AlertCircle,
       color: "purple",
       bgColor: "bg-purple-50",
       textColor: "text-purple-600",
-      iconColor: "text-purple-500",
-      sub: data?.teamRatingChange 
+      iconColor: "text-purple-500"
     },
   ];
 
@@ -68,7 +58,7 @@ export default function SummaryCards({ data, loading }) {
           No analytics data found for your department/municipality. Please check backend filters or complaint data.
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {cards.map((card) => {
           const Icon = card.icon;
           return (

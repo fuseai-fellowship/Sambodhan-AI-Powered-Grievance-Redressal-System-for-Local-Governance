@@ -67,14 +67,83 @@ def register_admin(admin_in: AdminCreate, db: Session = Depends(get_db)):
 # Admin login endpoint
 @router.post("/login", response_model=AdminLoginResponse)
 def login_admin(login_req: AdminLoginRequest, db: Session = Depends(get_db)):
+    from app.models.location import Municipality, District
+    
     admin = db.query(Admin).filter(Admin.email == login_req.email).first()
     if not admin or not verify_password(login_req.password, admin.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     token_data = {"sub": str(admin.id), "role": admin.role, "email": admin.email}
     access_token = create_access_token(token_data)
-    # Convert SQLAlchemy admin to AdminRead schema
-    admin_read = AdminRead.model_validate(admin)
+    
+    # Convert SQLAlchemy admin to AdminRead schema and enrich with location names
+    admin_dict = AdminRead.model_validate(admin).model_dump()
+    
+    # For Super Admin with district_id, fetch district name
+    if admin.district_id is not None:
+        district = db.query(District).filter(District.id == admin.district_id).first()
+        if district:
+            admin_dict["district_name"] = district.name
+    
+    # For other admins with municipality_id, fetch municipality and district names
+    if admin.municipality_id is not None:
+        municipality = db.query(Municipality).filter(Municipality.id == admin.municipality_id).first()
+        if municipality:
+            admin_dict["municipality_name"] = municipality.name
+            # Get district name from municipality's district
+            if municipality.district_id is not None:
+                district = db.query(District).filter(District.id == municipality.district_id).first()
+                if district:
+                    admin_dict["district_name"] = district.name
+    
+    admin_read = AdminRead(**admin_dict)
     return AdminLoginResponse(access_token=access_token, admin=admin_read)
+
+# GET /api/admins/ endpoint - List all admins with optional filters
+from typing import List
+from fastapi import Query
+@router.get("/", response_model=List[AdminRead])
+def get_admins(
+    municipality_id: Optional[int] = Query(None, description="Filter by municipality ID"),
+    district_id: Optional[int] = Query(None, description="Filter by district ID"),
+    role: Optional[str] = Query(None, description="Filter by role"),
+    department: Optional[str] = Query(None, description="Filter by department"),
+    db: Session = Depends(get_db)
+):
+    from app.models.location import Municipality, District
+    
+    query = db.query(Admin)
+    
+    # Apply filters
+    if municipality_id is not None:
+        query = query.filter(Admin.municipality_id == municipality_id)
+    if district_id is not None:
+        query = query.filter(Admin.district_id == district_id)
+    if role is not None:
+        query = query.filter(Admin.role == role)
+    if department is not None:
+        query = query.filter(Admin.department == department)
+    
+    admins = query.all()
+    
+    # Enrich with municipality and district names
+    result = []
+    for admin in admins:
+        admin_dict = AdminRead.model_validate(admin).model_dump()
+        
+        if admin.municipality_id is not None:
+            municipality = db.query(Municipality).filter(Municipality.id == admin.municipality_id).first()
+            if municipality:
+                admin_dict["municipality_name"] = municipality.name
+                # Get district name from municipality's district
+                if municipality.district_id is not None:
+                    district = db.query(District).filter(District.id == municipality.district_id).first()
+                    if district:
+                        admin_dict["district_name"] = district.name
+        
+        result.append(AdminRead(**admin_dict))
+    
+    return result
+
 
 # GET /api/admins/{id} endpoint
 from fastapi import Path
