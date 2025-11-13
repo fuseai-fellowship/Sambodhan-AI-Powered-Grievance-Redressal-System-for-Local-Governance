@@ -46,5 +46,4 @@ class User(Base):
     # Relationships
     complaints = relationship("Complaint", back_populates="citizen")
     status_changes = relationship("ComplaintStatusHistory", back_populates="changed_by_user")
-    misclassifications_reported = relationship("MisclassifiedComplaint", back_populates="reported_by_user")
     ward = relationship("Ward", back_populates="users")
