@@ -10,16 +10,21 @@ import ResponseTimeChart from "../components/dashboard/ResponseTimeChart";
 import QualityMetricsChart from "../components/dashboard/QualityMetricsChart";
 import PerformanceBenchmark from "../components/dashboard/PerformanceBenchmark";
 import TrendsChart from "../components/dashboard/TrendsChart";
+import TeamManagement from "../components/dashboard/TeamManagement";
+import MisclassificationManager from "../components/dashboard/MisclassificationManager";
+import AdminRegistration from "../components/dashboard/AdminRegistration";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, TrendingUp, Users, Clock, CheckCircle, AlertCircle, BarChart3, LogOut } from "lucide-react";
+import { Download, TrendingUp, Users, Clock, CheckCircle, AlertCircle, BarChart3, LogOut, Building2, RefreshCw, Zap, Database, FolderKanban } from "lucide-react";
 import Cookies from "js-cookie";
 
 const TABS = [
   { name: "Overview", icon: BarChart3 },
   { name: "Team Performance", icon: Users },
+  { name: "Team Management", icon: Users },
   { name: "Workflow", icon: TrendingUp },
   { name: "Analytics", icon: BarChart3 },
+  { name: "Classification Review", icon: AlertCircle },
   { name: "My Cases", icon: CheckCircle },
 ];
 
@@ -96,19 +101,109 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    
+    // If user is super_admin and district_name is missing, fetch it
+    if (user.role === 'super_admin' && !user.district_name && user.district_id) {
+      axios.get(`/api/location/districts/${user.district_id}`)
+        .then(res => {
+          const updatedUser = { ...user, district_name: res.data.name };
+          setUser(updatedUser);
+          Cookies.set('sambodhan_admin_user', JSON.stringify(updatedUser), { expires: 7 });
+        })
+        .catch(err => console.error("Error fetching district name:", err));
+    }
+    
+    // If user has municipality_id but missing municipality_name or district_name, fetch them
+    if (user.municipality_id && (!user.municipality_name || !user.district_name)) {
+      axios.get(`/api/location/municipalities/${user.municipality_id}`)
+        .then(res => {
+          const updatedUser = { 
+            ...user, 
+            municipality_name: res.data.name,
+            district_name: res.data.district?.name || user.district_name 
+          };
+          setUser(updatedUser);
+          Cookies.set('sambodhan_admin_user', JSON.stringify(updatedUser), { expires: 7 });
+        })
+        .catch(err => console.error("Error fetching municipality/district names:", err));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Build params based on user role
     const params = {};
-    if (user.department) params.department = user.department;
-    if (user.municipality_id) params.municipality_id = user.municipality_id;
-    if (user.role === "ward_admin" && user.ward_id) params.ward_id = user.ward_id;
+    
+    if (user.role === "super_admin") {
+      // Super Admin: Include district_id to get ALL municipalities in that district
+      // Do NOT include department or municipality_id - they see everything in the district
+      if (user.district_id) {
+        params.district_id = user.district_id;
+      }
+    } else if (user.role === "municipal_admin") {
+      // Municipal Admin: Include municipality_id but NOT department (all departments in municipality)
+      if (user.municipality_id) {
+        params.municipality_id = user.municipality_id;
+      }
+    } else if (user.role === "department_admin") {
+      // Department Admin: Include both municipality and department
+      if (user.department) params.department = user.department;
+      if (user.municipality_id) params.municipality_id = user.municipality_id;
+    } else if (user.role === "ward_admin" && user.ward_id) {
+      // Ward Admin: Include ward_id
+      params.ward_id = user.ward_id;
+    }
+    
+    console.log("Dashboard params for role", user.role, ":", params);
+    
+    // Clear cache first for fresh data (especially important for super admin)
+    if (user.role === 'super_admin') {
+      axios.post("/api/analytics/recompute").catch(() => {
+        console.log("Cache clear failed or endpoint not available, continuing with cached data");
+      });
+    }
     
     // Fetch summary/stats
     setStatsLoading(true);
     axios.get("/api/analytics/summary", { params }).then(res => {
+      console.log("=== SUMMARY API RESPONSE ===");
+      console.log("Full response:", res);
+      console.log("res.data:", res.data);
+      console.log("res.data.data:", res.data?.data);
+      
       const rawData = res.data?.data || res.data;
-      console.log("Summary raw data:", rawData);
+      console.log("Extracted rawData:", rawData);
+      
+      // For super admin, if municipality_details exists, calculate total from it
+      if (user.role === 'super_admin' && rawData?.municipality_details) {
+        const municipalityTotal = Object.values(rawData.municipality_details).reduce(
+          (sum, munData) => sum + (munData.total || 0), 
+          0
+        );
+        console.log("Calculated total from municipality_details:", municipalityTotal);
+        if (municipalityTotal > 0 && (!rawData.total || rawData.total < municipalityTotal)) {
+          rawData.total = municipalityTotal;
+          rawData.total_complaints = municipalityTotal;
+          console.log("Updated rawData.total to:", municipalityTotal);
+        }
+      }
+      
+      console.log("Summary stats breakdown:", {
+        total: rawData?.total,
+        total_complaints: rawData?.total_complaints,
+        team_members: rawData?.team_members,
+        by_status: rawData?.by_status,
+        by_urgency: rawData?.by_urgency,
+        by_department: rawData?.by_department
+      });
+      console.log("========================");
       setStats(rawData);
       setStatsLoading(false);
-    }).catch(() => setStatsLoading(false));
+    }).catch((err) => {
+      console.error("Error fetching stats:", err);
+      setStatsLoading(false);
+    });
     
     // Fetch by-department (for issue breakdown)
     setIssueTypesLoading(true);
@@ -274,6 +369,41 @@ export default function AdminDashboard() {
     router.replace('/admin-login');
   };
 
+  // Determine which tabs to show based on user role
+  const getAvailableTabs = () => {
+    const baseTabs = [
+      { name: "Overview", icon: BarChart3 },
+      { name: "Team Performance", icon: Users },
+    ];
+
+    // Only Municipal Admin and Super Admin can see Team Management
+    if (user?.role === 'municipal_admin' || user?.role === 'super_admin') {
+      baseTabs.push({ name: "Team Management", icon: Users });
+    }
+
+    baseTabs.push(
+      { name: "Workflow", icon: TrendingUp },
+      { name: "Analytics", icon: BarChart3 }
+    );
+
+    // Classification Review tab for all admins
+    baseTabs.push({ name: "Classification Review", icon: AlertCircle });
+
+    // Only Super Admin sees "Retrain Models" tab
+    if (user?.role === 'super_admin') {
+      baseTabs.push({ name: "Retrain Models", icon: RefreshCw });
+    }
+
+    // Only Department Admin sees "My Cases" tab
+    if (user?.role === 'department_admin') {
+      baseTabs.push({ name: "My Cases", icon: CheckCircle });
+    }
+
+    return baseTabs;
+  };
+
+  const availableTabs = user ? getAvailableTabs() : TABS;
+
   if (userLoading) return <Skeleton className="h-96 w-full" />;
   if (!user) return <div className="text-center mt-20 text-red-600">Unauthorized. Please login as admin.</div>;
 
@@ -294,8 +424,18 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="font-semibold text-gray-800">{user?.name}</div>
-              <div className="text-xs text-gray-500">{user?.department}</div>
+              <div className="text-xs text-gray-500">
+                {user?.role === 'municipal_admin' 
+                  ? 'Municipal Admin' 
+                  : user?.role === 'super_admin'
+                  ? 'Super Admin'
+                  : user?.role === 'department_admin'
+                  ? `${user?.department}`
+                  : user?.role}
+              </div>
             </div>
+            {/* Only show Admin Registration for Super Admin */}
+            {user?.role === 'super_admin' && <AdminRegistration />}
             <Button onClick={handleExport} className="bg-[#DC143C] hover:bg-[#B91C1C] text-white rounded-lg px-4 py-2 flex items-center gap-2 shadow-md transition-all">
               <Download className="w-4 h-4" />
               Export Analytics
@@ -312,12 +452,25 @@ export default function AdminDashboard() {
       <div className="px-8 pt-8 pb-4 bg-white border-b">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">{user?.department || "Department Dashboard"}</h1>
-            <p className="text-gray-600">{user?.municipality_name || "Municipality"} • {user?.district_name || "District"}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+              {user?.role === 'municipal_admin' 
+                ? "Municipal Admin Dashboard" 
+                : user?.role === 'super_admin'
+                ? "Super Admin Dashboard"
+                : user?.department || "Department Dashboard"}
+            </h1>
+            <p className="text-gray-600">
+              {user?.role === 'super_admin' 
+                ? (user?.district_name || "District")
+                : `${user?.municipality_name || "Municipality"} • ${user?.district_name || "District"}`
+              }
+            </p>
           </div>
           <div className="flex gap-4">
             <div className="text-right">
-              <div className="text-2xl font-bold text-[#DC143C]">{stats?.total || 0}</div>
+              <div className="text-2xl font-bold text-[#DC143C]">
+                {stats?.total ?? stats?.total_complaints ?? stats?.data?.total ?? stats?.data?.total_complaints ?? 0}
+              </div>
               <div className="text-xs text-gray-500">Total Grievances</div>
             </div>
             <div className="text-right">
@@ -340,7 +493,7 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="px-8 mt-6 bg-white border-b sticky top-16 z-10">
         <div className="flex gap-1">
-          {TABS.map((tab, idx) => {
+          {availableTabs.map((tab, idx) => {
             const Icon = tab.icon;
             return (
               <button
@@ -363,7 +516,7 @@ export default function AdminDashboard() {
       {/* Tab Content */}
       <div className="px-8 py-6">
         {/* Overview Tab */}
-        {activeTab === 0 && (
+        {availableTabs[activeTab]?.name === "Overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Metrics & Breakdown */}
             <div className="lg:col-span-1 space-y-6">
@@ -371,7 +524,12 @@ export default function AdminDashboard() {
                 data={issueTypes || []} 
                 loading={issueTypesLoading} 
               />
-              <PerformanceBenchmark data={benchmark || {}} loading={benchmarkLoading} />
+              <PerformanceBenchmark 
+                data={benchmark || {}} 
+                loading={benchmarkLoading}
+                stats={stats}
+                statsLoading={statsLoading}
+              />
             </div>
 
             {/* Right Column - Charts */}
@@ -396,32 +554,14 @@ export default function AdminDashboard() {
         )}
 
         {/* Team Performance Tab */}
-        {activeTab === 1 && (
+        {availableTabs[activeTab]?.name === "Team Performance" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PerformanceBenchmark data={benchmark || {}} loading={benchmarkLoading} />
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Team Statistics</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm text-gray-700">Active Team Members</span>
-                    <span className="font-bold text-blue-600">{stats?.team_members || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-sm text-gray-700">Avg. Cases per Member</span>
-                    <span className="font-bold text-green-600">
-                      {stats?.team_members > 0 ? Math.round((stats?.total || 0) / stats.team_members) : 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                    <span className="text-sm text-gray-700">Resolution Rate</span>
-                    <span className="font-bold text-purple-600">
-                      {stats?.total > 0 ? Math.round(((stats?.by_status?.Resolved || 0) / stats.total) * 100) : 0}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PerformanceBenchmark 
+              data={benchmark || {}} 
+              loading={benchmarkLoading}
+              stats={stats}
+              statsLoading={statsLoading}
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <TrendsChart
                 data={dailyTrends?.periods?.map(date => ({ date, count: dailyTrends?.total_by_period?.[date] ?? 0 })) ?? []}
@@ -442,10 +582,108 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Team Management Tab */}
+        {availableTabs[activeTab]?.name === "Team Management" && (
+          <TeamManagement user={user} />
+        )}
+
         {/* Workflow Tab */}
-        {activeTab === 2 && (
+        {availableTabs[activeTab]?.name === "Workflow" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Check if user is Super Admin and we have municipality details */}
+            {user?.role === "super_admin" && stats?.municipality_details && Object.keys(stats.municipality_details).length > 0 ? (
+              // Super Admin View: Show data by municipality
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">District-Wide Overview by Municipality</h3>
+                  <p className="text-sm text-blue-700">Data is organized by each municipality in your district</p>
+                </div>
+                
+                {Object.entries(stats.municipality_details).map(([municipalityName, munData]) => (
+                  <div key={municipalityName} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <Building2 className="w-6 h-6 text-indigo-600" />
+                      {municipalityName}
+                      <span className="ml-auto text-sm font-normal text-gray-600">
+                        Total Cases: <span className="font-bold text-gray-900">{munData.total || 0}</span>
+                      </span>
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Status Distribution for this municipality */}
+                      <div className="bg-gray-50 rounded-lg p-5">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                          Status Distribution
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <span className="text-sm text-gray-700">Pending</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_status?.Pending || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                              <span className="text-sm text-gray-700">In Process</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_status?.["In Process"] || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              <span className="text-sm text-gray-700">Resolved</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_status?.Resolved || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Urgency Breakdown for this municipality */}
+                      <div className="bg-gray-50 rounded-lg p-5">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-orange-500" />
+                          Urgency Levels
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span className="text-sm text-gray-700">Highly Urgent</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_urgency?.["HIGHLY URGENT"] || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                              <span className="text-sm text-gray-700">Urgent</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_urgency?.URGENT || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                              <span className="text-sm text-gray-700">Normal</span>
+                            </div>
+                            <span className="font-semibold text-gray-900">{munData.by_urgency?.NORMAL || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <IssueBreakdownTable 
+                  data={issueTypes || []} 
+                  loading={issueTypesLoading} 
+                />
+              </div>
+            ) : (
+              // Default View for Municipal Admin and Department Admin
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Status Distribution */}
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -535,11 +773,13 @@ export default function AdminDashboard() {
               data={issueTypes || []} 
               loading={issueTypesLoading} 
             />
+            </>
+            )}
           </div>
         )}
 
         {/* Analytics Tab */}
-        {activeTab === 3 && (
+        {availableTabs[activeTab]?.name === "Analytics" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <LocationHotspotsChart
@@ -564,12 +804,284 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Classification Review Tab */}
+        {availableTabs[activeTab]?.name === "Classification Review" && (
+          <div className="space-y-6">
+            <MisclassificationManager user={user} />
+          </div>
+        )}
+
+        {/* Retrain Models Tab - Super Admin Only */}
+        {availableTabs[activeTab]?.name === "Retrain Models" && (
+          <div className="space-y-6">
+            <RetrainModelsSection />
+          </div>
+        )}
+
         {/* My Cases Tab */}
-        {activeTab === 4 && (
+        {availableTabs[activeTab]?.name === "My Cases" && (
           <div className="space-y-6">
             <AdminGrievanceManager user={user} />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Retrain Models Section Component
+function RetrainModelsSection() {
+  const [loading, setLoading] = useState({
+    department: false,
+    urgency: false,
+    dataset: false
+  });
+  const [results, setResults] = useState({
+    department: null,
+    urgency: null,
+    dataset: null
+  });
+
+  const handleRetrain = async (modelType) => {
+    setLoading(prev => ({ ...prev, [modelType]: true }));
+    setResults(prev => ({ ...prev, [modelType]: null }));
+
+    try {
+      const response = await axios.post(`/api/retrain/${modelType}`);
+      setResults(prev => ({ 
+        ...prev, 
+        [modelType]: { 
+          success: true, 
+          message: response.data?.message || 'Retraining initiated successfully!',
+          data: response.data
+        } 
+      }));
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to initiate retraining.';
+      
+      // Check if it's a configuration error
+      const isConfigError = errorMessage.includes('not configured') || 
+                           errorMessage.includes('environment variable') ||
+                           errorMessage.includes('.env');
+      
+      setResults(prev => ({ 
+        ...prev, 
+        [modelType]: { 
+          success: false, 
+          message: errorMessage,
+          isConfigError: isConfigError
+        } 
+      }));
+    } finally {
+      setLoading(prev => ({ ...prev, [modelType]: false }));
+    }
+  };
+
+  const models = [
+    {
+      key: 'department',
+      title: 'Department Classifier',
+      description: 'Retrain the model that classifies grievances into different department categories',
+      icon: FolderKanban,
+      color: 'blue'
+    },
+    {
+      key: 'urgency',
+      title: 'Urgency Classifier',
+      description: 'Retrain the model that determines urgency levels (Normal, Urgent, Highly Urgent)',
+      icon: Zap,
+      color: 'orange'
+    },
+    {
+      key: 'dataset',
+      title: 'Prepare Dataset',
+      description: 'Restart the dataset preparation space for updated training data',
+      icon: Database,
+      color: 'green'
+    }
+  ];
+
+  const getColorClasses = (color) => {
+    const colors = {
+      blue: {
+        border: 'border-blue-200',
+        bg: 'bg-blue-50',
+        text: 'text-blue-700',
+        button: 'bg-blue-600 hover:bg-blue-700',
+        success: 'bg-blue-100 border-blue-300 text-blue-800',
+        error: 'bg-red-100 border-red-300 text-red-800'
+      },
+      orange: {
+        border: 'border-orange-200',
+        bg: 'bg-orange-50',
+        text: 'text-orange-700',
+        button: 'bg-orange-600 hover:bg-orange-700',
+        success: 'bg-orange-100 border-orange-300 text-orange-800',
+        error: 'bg-red-100 border-red-300 text-red-800'
+      },
+      green: {
+        border: 'border-green-200',
+        bg: 'bg-green-50',
+        text: 'text-green-700',
+        button: 'bg-green-600 hover:bg-green-700',
+        success: 'bg-green-100 border-green-300 text-green-800',
+        error: 'bg-red-100 border-red-300 text-red-800'
+      }
+    };
+    return colors[color] || colors.blue;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#003C88] to-[#0052b3] text-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <RefreshCw className="w-8 h-8" />
+          <h2 className="text-2xl font-bold">Model Retraining Center</h2>
+        </div>
+        <p className="text-blue-100">
+          Retrain AI models with updated data to improve classification accuracy for misclassified grievances
+        </p>
+      </div>
+
+      {/* Info Alert */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-yellow-800 mb-1">Important Information</h3>
+            <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+              <li>Retraining initiates Hugging Face Spaces which may take several minutes to start</li>
+              <li>Models will be trained on the latest corrected data from the Classification Review section</li>
+              <li>You can monitor the progress in the Hugging Face Spaces dashboard</li>
+              <li>Once training completes, the new model will automatically be deployed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {models.map(model => {
+          const colors = getColorClasses(model.color);
+          const result = results[model.key];
+          const isLoading = loading[model.key];
+
+          return (
+            <div key={model.key} className={`bg-white rounded-xl shadow-md border-2 ${colors.border} overflow-hidden transition-all hover:shadow-lg`}>
+              {/* Card Header */}
+              <div className={`${colors.bg} p-4 border-b ${colors.border}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <model.icon className={`w-8 h-8 ${colors.text}`} />
+                  <h3 className={`font-bold text-lg ${colors.text}`}>{model.title}</h3>
+                </div>
+                <p className="text-sm text-gray-600">{model.description}</p>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-4">
+                {/* Result Message */}
+                {result && (
+                  <div className={`mb-4 p-3 rounded-lg border ${result.success ? colors.success : colors.error}`}>
+                    <p className="text-sm font-medium mb-1">{result.message}</p>
+                    
+                    {/* Configuration Error Help */}
+                    {result.isConfigError && (
+                      <div className="mt-2 pt-2 border-t border-red-200">
+                        <div className="flex items-center gap-1 mb-1">
+                          <AlertCircle className="w-3 h-3 text-red-700" />
+                          <p className="text-xs font-semibold">Setup Required:</p>
+                        </div>
+                        <ol className="text-xs space-y-1 list-decimal list-inside">
+                          <li>Create <code className="bg-red-200 px-1 rounded">.env</code> file in <code className="bg-red-200 px-1 rounded">src/backend/</code></li>
+                          <li>Copy from <code className="bg-red-200 px-1 rounded">.env.example</code></li>
+                          <li>Add your Hugging Face token and Space IDs</li>
+                          <li>Restart the backend server</li>
+                        </ol>
+                      </div>
+                    )}
+                    
+                    {/* Success with Space URL */}
+                    {result.success && result.data?.space_url && (
+                      <a 
+                        href={result.data.space_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs underline mt-1 block hover:opacity-80"
+                      >
+                        View Training Space →
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <button
+                  onClick={() => handleRetrain(model.key)}
+                  disabled={isLoading}
+                  className={`w-full ${colors.button} text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Initiating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Start Retraining
+                    </>
+                  )}
+                </button>
+
+                {/* Technical Details */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 font-mono">
+                    POST /api/retrain/{model.key}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Additional Info */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-[#003C88]" />
+          Retraining Workflow
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">1</div>
+            <div>
+              <h4 className="font-semibold text-sm text-gray-800">Review & Correct</h4>
+              <p className="text-xs text-gray-600">Use Classification Review tab to fix misclassified data</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">2</div>
+            <div>
+              <h4 className="font-semibold text-sm text-gray-800">Prepare Dataset</h4>
+              <p className="text-xs text-gray-600">Click "Prepare Dataset" to update training data</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">3</div>
+            <div>
+              <h4 className="font-semibold text-sm text-gray-800">Retrain Models</h4>
+              <p className="text-xs text-gray-600">Start retraining for Department and/or Urgency classifiers</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">4</div>
+            <div>
+              <h4 className="font-semibold text-sm text-gray-800">Auto-Deploy</h4>
+              <p className="text-xs text-gray-600">Updated models are automatically deployed when ready</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
