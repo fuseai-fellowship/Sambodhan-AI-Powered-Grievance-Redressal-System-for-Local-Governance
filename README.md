@@ -23,11 +23,11 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
     - [Resources](#resources-1)
     - [Quick Start](#quick-start-1)
     - [Model Evaluation](#model-evaluation-1)
-- [Continuous Learning System for Sambodhan AI](#continuous-learning-system-for-sambodhan-ai)
+- [Continuous Learning Systemfor Sambodhan AI](#continuous-learning-systemfor-sambodhan-ai)
   - [Workflow](#workflow)
-  - [Automated Dataset Preparation](#automated-dataset-preparation)
-  - [Model Retraining Pipeline](#model-retraining-pipeline)
-  - [How Both Pipelines Work Together](#how-both-pipelines-work-together)
+  - [1. Dataset Preparation Pipeline](#1-dataset-preparation-pipeline)
+  - [2. Model Retraining Pipeline](#2-model-retraining-pipeline)
+  - [3. Orchestrator: Continuous Learning CI/CD](#3-orchestrator-continuous-learning-cicd)
 <!-- - [Appendices / Resources](#appendices--resources)
   - [Docs folder references](#docs-folder-references)
   - [API / Swagger links](#api--swagger-links) -->
@@ -191,33 +191,33 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
 
 ---
 
+## Continuous Learning Systemfor Sambodhan AI
 
-## Continuous Learning System for Sambodhan AI
+Sambodhan’s **Continuous Learning System** orchestrates automated dataset preparation and model retraining, ensuring  its **Urgency** and **Department** classification models continuously learn from real-world feedback with minimal manual intervention.
 
-Sambodhan AI features a **continuous learning system** that automatically enhances its **Urgency** and **Department** classification models using real-world feedback.
+This system consists of three core components:
+1. **Dataset Preparation Pipeline** 
+2. **Model Retraining Pipeline**
+3. **Orchestrator: Continuous Learning CI/CD**
 
-This system consists of two core components:
-1. **Automated Dataset Preparation** 
-2.  **Model Retraining**
+This system leverages **Hugging Face Spaces**, **GitHub Actions CI/CD**, **PostgreSQL**, and **Weights & Biases** for a fully traceable, resource-efficient, and performance-driven pipeline.
 
-Both are built on **Hugging Face Spaces** and tracked via **Weights & Biases (W&B)**.
-
-
+---
 
 ### Workflow
 
 ```mermaid
 graph LR
     A[Prepare Dataset Space] -->|Push Dataset| B[HF Dataset Hub]
-    B -->|Trigger Manually| C[Retrain Space]
+    B -->|Trigger | C[Retrain Space]
     C -->|Evaluate & Deploy| D[Inference Space]
     D -->|Collect Feedback| E[PostgreSQL DB]
-    E -->|Fetch Misclassified</br>Manual Trigger| A
+    E -->|Fetch Misclassified</br>Trigger| A
 ```
 > Fig: Continuous Learning Workflow
 ---
 
-### Automated Dataset Preparation
+### 1. Dataset Preparation Pipeline
 
 The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishes new training data for retraining cycles.
 
@@ -243,7 +243,7 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 #### Workflow
 
 ```mermaid
-flowchart TD
+graph LR
     A["<b>TRIGGER</b><br>Restart Automated Prepare Dataset Pipeline"] --> B["Fetch Misclassified + Correct Data<br>(From SQL Database)"]
     B --> C{"<b>SIZE CHECK</b><br>Records ≥ MIN_DATASET_LEN?"}
     C -->|Yes| D["Preprocess & Split Dataset"]
@@ -260,7 +260,7 @@ flowchart TD
 
 ---
 
-### Model Retraining Pipeline
+### 2. Model Retraining Pipeline
 
 The **Retraining Pipeline** ensures Sambodhan’s models continuously improve based on the latest prepared datasets.
 
@@ -286,7 +286,7 @@ The **Retraining Pipeline** ensures Sambodhan’s models continuously improve ba
 #### Workflow
 
 ```mermaid
-flowchart TD
+graph LR
     A["Trigger Retrain<br>(Restart Space)"] --> B["Load Config & Latest Dataset"]
     B --> C["Initialize Model & W&B Run"]
     C --> D["Train with Focal Loss + Early Stopping"]
@@ -304,13 +304,41 @@ For complete setup instructions, environment configuration, and architecture dia
 
 ---
 
-### How Both Pipelines Work Together
+### 3. Orchestrator: Continuous Learning CI/CD
 
-The **Dataset Preparation Pipeline** feeds new, cleaned, and versioned data into the **Model Retraining Pipeline**.
-This ensures that Sambodhan AI continuously learns from real-world feedback, maintains high accuracy, and safely deploys improved models with full traceability and minimal manual intervention.
+The **Orchestrator** coordinates dataset preparation and model retraining using **GitHub Actions**.
+
+#### Key Highlights
+
+* **Threshold-based execution** – only triggers dataset preparation if misclassified counts exceed configured thresholds.
+* **Version-aware retraining** – waits for new datasets to appear on **HF Hub** before retraining.
+* **Independent label handling** – handles **department** and **urgency** pipelines separately.
+* **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
+* **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
+
+#### Workflow
+
+```mermaid
+graph LR
+    Start["START<br/>Orchestrator triggered (manual or scheduled)"] --> DBConnect["Connect to DB<br/>Fetch misclassified counts"]
+    DBConnect --> ComputeLen["Compute dataset_len per label"]
+    ComputeLen --> CheckThreshold{"dataset_len >= threshold?"}
+    CheckThreshold -->|Yes| TriggerPrep["Restart Dataset Prep Space<br/>for labels above threshold"]
+    CheckThreshold -->|No| SkipLabel["Skip label<br/>Log info"] --> CheckThreshold
+    TriggerPrep --> PollDataset["Poll HF Hub metadata<br/>Wait for new dataset version"]
+    PollDataset -->|Success| RestartRetrain["Restart retrain HF Space<br/>for updated labels"]
+    PollDataset -->|Error / Timeout| PollError["Polling error / timeout<br/>Log warning / retry / abort"]
+    RestartRetrain --> End["END<br/>Orchestration complete"]
+    PollError --> End
+```
+
+> Fig: Continuous Learning Orchestration Pipeline
+
+
+**Detailed Guide:** 
+For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/orchestrator.md ](docs/orchestrator.md)**
 
 ---
-
 
 
 
