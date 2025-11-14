@@ -14,7 +14,11 @@ app = FastAPI(title="Sambodhan API")
 # Configure CORS for frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=[
+        "http://localhost:3001",
+        "https://sambodhan-ai-powered-grievance-redressal-system-for-rf5t446f8.vercel.app/",
+        "https://sambodhan-ai-powered-grievance-redressal-system-for-kywbsw8ly.vercel.app/"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
