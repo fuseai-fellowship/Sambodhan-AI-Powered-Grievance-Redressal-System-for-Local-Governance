@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import apiClient from '../../../lib/api-client';
+import apiClient from '../../lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, FileText, Send, CheckCircle, AlertCircle, Info, ChevronDown } from 'lucide-react';
 
