@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import apiClient from "@/lib/api-client";
+import apiClient from '../../../../lib/api-client';
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
