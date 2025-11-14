@@ -1,0 +1,40 @@
+name: Sambodhan Orchestrator
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Runs daily at 2 AM
+  workflow_dispatch:
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PREPARE_DATASET_REPO: ${{ secrets.PREPARE_DATASET_REPO }}
+      RETRAIN_DEPT_REPO: ${{ secrets.RETRAIN_DEPT_REPO }}
+      RETRAIN_URGENCY_REPO: ${{ secrets.RETRAIN_URGENCY_REPO }}
+      HF_HUB_METADATA_DEPT: ${{ secrets.HF_HUB_METADATA_DEPT }}
+      HF_HUB_METADATA_URGENCY: ${{ secrets.HF_HUB_METADATA_URGENCY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      THRESHOLD_DEPARTMENT: ${{ secrets.THRESHOLD_DEPARTMENT }}
+      THRESHOLD_URGENCY: ${{ secrets.THRESHOLD_URGENCY }}
+      POLL_INTERVAL: ${{ secrets.POLL_INTERVAL }}
+      POLL_TIMEOUT: ${{ secrets.POLL_TIMEOUT }}
+      DRY_RUN: ${{ secrets.DRY_RUN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r orchestrator/requirements.txt
+
+      - name: Run Orchestrator
+        run: python orchestrator/orchestrator.py
