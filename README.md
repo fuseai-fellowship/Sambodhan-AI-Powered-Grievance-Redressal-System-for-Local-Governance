@@ -61,6 +61,11 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 │   ├── processed/            # Cleaned / preprocessed data
 │   └── external/             # External or third-party datasets
 ├── notebooks/                # Jupyter notebooks for exploration & experimentation
+├── orchestrator/             # All CI/CD orchestration logic
+│   ├── orchestrator.py       # Main orchestrator script
+│   ├── .env_examples         # Example environment variables file
+│   ├── requirements.txt      # Orchestrator-specific dependencies
+│   └── __init__.py           # makes it a Python package
 ├── src/                      # Source code
 │   ├── __init__.py
 │   ├── backend/              # Core backend application
