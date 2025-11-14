@@ -2,7 +2,7 @@
 'use client';
 import React, { useState } from 'react';
 import chatbotTriggerStyles from './ChatbotTrigger.module.css';
-import apiClient from '@/lib/api-client';
+import apiClient from '../../lib/api-client';
 // Simple Chatbot Modal Component
 function ChatbotModal({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState("");
