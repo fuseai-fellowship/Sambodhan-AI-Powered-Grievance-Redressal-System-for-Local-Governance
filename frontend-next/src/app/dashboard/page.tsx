@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import apiClient from "@/lib/api-client";
+import apiClient from "../../lib/api-client";
 import DashboardInsights from "@/components/DashboardInsights";
 import FileComplaintForm from './FileComplaintForm';
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -138,7 +138,7 @@ const Dashboard = () => {
   useEffect(() => {
     setLoadingDistricts(true);
     apiClient.get('/locations/districts/')
-      .then(res => setDistricts(res.data))
+      .then((res: { data: any }) => setDistricts(res.data))
       .catch(() => setDistricts([]))
       .finally(() => setLoadingDistricts(false));
   }, []);
@@ -148,7 +148,7 @@ const Dashboard = () => {
     if (selectedDistrictId) {
       setLoadingMunicipalities(true);
       apiClient.get(`/locations/municipalities/?district_id=${selectedDistrictId}`)
-        .then(res => setMunicipalities(res.data))
+        .then((res: { data: any }) => setMunicipalities(res.data))
         .catch(() => setMunicipalities([]))
         .finally(() => setLoadingMunicipalities(false));
     } else {
@@ -162,7 +162,7 @@ const Dashboard = () => {
     if (selectedMunicipalityId) {
       setLoadingWards(true);
       apiClient.get(`/locations/wards/?municipality_id=${selectedMunicipalityId}`)
-        .then(res => setWards(res.data))
+        .then((res: { data: any }) => setWards(res.data))
         .catch(() => setWards([]))
         .finally(() => setLoadingWards(false));
     } else {
@@ -314,8 +314,8 @@ const Dashboard = () => {
 
   // Load categories and wards (simulate API)
   useEffect(() => {
-  apiClient.get('/chatbot/departments').then(res => setCategories(res.data)).catch(() => setCategories([]));
-    apiClient.get('/locations/wards/').then(res => setWards(res.data)).catch(() => setWards([]));
+  apiClient.get('/chatbot/departments').then((res: { data: any }) => setCategories(res.data)).catch(() => setCategories([]));
+    apiClient.get('/locations/wards/').then((res: { data: any }) => setWards(res.data)).catch(() => setWards([]));
   }, []);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -368,7 +368,7 @@ const Dashboard = () => {
     // Fetch complaints only once on mount
     useEffect(() => {
       apiClient.get("/chatbot/auth/complaints")
-        .then(res => {
+        .then((res: any) => {
           console.log("Complaints API Response:", res.data);
           if (res.data.length > 0) {
             console.log("First complaint sample:", res.data[0]);
@@ -385,7 +385,7 @@ const Dashboard = () => {
             avgResolution: 6.5, // Replace with actual calculation
           });
         })
-        .catch(err => {
+        .catch((err: any) => {
           if (err.response?.status === 401) {
             setAuthError("Session expired or unauthorized. Please login again.");
           }
