@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import apiClient from "../../lib/api-client";
+import apiClient from "@/lib/api-client";
 import DashboardInsights from "@/components/DashboardInsights";
 import FileComplaintForm from './FileComplaintForm';
 import SummaryCards from "@/components/dashboard/SummaryCards";

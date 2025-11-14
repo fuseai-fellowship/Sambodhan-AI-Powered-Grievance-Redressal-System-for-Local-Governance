@@ -28,7 +28,7 @@ type Ward = {
   updated_at: string;
   municipality?: Municipality;
 };
-import apiClient from '../../lib/api-client';
+import apiClient from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function FileComplaintForm() {
