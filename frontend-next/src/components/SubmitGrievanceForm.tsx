@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Info, Send } from 'lucide-react';
-import { Button } from './ui/Button';
+// Removed invalid Lucide icon imports
+import { Button } from './ui/button';
 
 export default function SubmitGrievanceForm() {
   const [formData, setFormData] = useState({
@@ -30,12 +30,6 @@ export default function SubmitGrievanceForm() {
       setWards([]);
     }
   }, [formData.municipality]);
-  const [formData, setFormData] = useState({
-    district: '',
-    municipality: '',
-      ward_id: '', // store ward_id as string, convert to number for payload
-    description: '',
-  });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
@@ -191,7 +185,7 @@ export default function SubmitGrievanceForm() {
           </div>
 
           <div className="bg-gray-50 text-gray-600 text-sm rounded-lg px-4 py-3 flex items-start gap-2 border border-gray-200">
-            <Info className="w-4 h-4 text-indigo-400 mt-0.5" />
+            {/* Removed missing icon: Info */}
             <p>You will receive a confirmation SMS and email with your grievance ID. Average response time is 24 hours.</p>
           </div>
 
@@ -203,7 +197,7 @@ export default function SubmitGrievanceForm() {
               size="lg"
               className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
             >
-              <Send className="w-4 h-4" />
+                {/* Removed missing icon: Send */}
               {loading ? 'Submitting...' : 'Submit Grievance'}
             </Button>
           </div>

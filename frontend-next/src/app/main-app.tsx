@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { LandingPage } from '../components/LandingPage';
+import LandingPage from '../components/LandingPage';
 import { AuthPage } from '../components/AuthPage';
 import { AdminAuthPage } from '../components/AdminAuthPage';
-import { CitizenDashboard } from '../components/CitizenDashboard';
+import CitizenDashboard from '../components/CitizenDashboard';
 import { MunicipalAdminDashboard } from '../components/MunicipalAdminDashboard';
 import { DepartmentAdminDashboard } from '../components/DepartmentAdminDashboard';
 import { SuperAdminDashboard } from '../components/SuperAdminDashboard';
@@ -94,7 +94,7 @@ export default function MainApp() {
         onNavigate={handleNavigate}
       />
       <main className="flex-1">
-        {currentPage === 'landing' && <LandingPage onNavigate={handleNavigate} />}
+        {currentPage === 'landing' && <LandingPage />}
         {currentPage === 'auth' && <AuthPage onLogin={handleCitizenLogin} />}
         {currentPage === 'admin-auth' && <AdminAuthPage onLogin={handleAdminLogin} />}
         {currentPage === 'citizen' && <CitizenDashboard />}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, TrendingUp, MessageSquare, Shield, Phone, Mail, MapPin } from "lucide-react";
+import { FileText, MessageSquare, Shield } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -80,7 +80,7 @@ export default function LandingPage() {
               iconColor: "text-[#E8214A]",
             },
             {
-              icon: TrendingUp,
+              icon: null,
               title: "Real-time Tracking",
               description: "Monitor the status and progress of your complaints",
               borderColor: "border-t-[#002F6C]",
@@ -108,7 +108,9 @@ export default function LandingPage() {
                 className={`bg-white shadow-sm rounded-lg border border-gray-200 border-t-4 ${feature.borderColor} p-6 flex flex-col items-center text-center hover:shadow-md transition-shadow`}
               >
                 <div className={`mb-4 ${feature.iconColor} bg-gray-50 rounded-full p-4`}>
-                  <IconComponent className="w-8 h-8" strokeWidth={1.5} />
+                  {IconComponent ? (
+                    <IconComponent className="w-8 h-8" strokeWidth={1.5} />
+                  ) : null}
                 </div>
                 <h3 className="font-semibold text-gray-900 text-lg mb-2">{feature.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
@@ -189,15 +191,15 @@ export default function LandingPage() {
             <h4 className="font-semibold text-lg mb-3">Contact Information</h4>
             <ul className="space-y-3 text-sm text-gray-200">
               <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: Phone */}
                 <span>+977-1-4211000</span>
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: Mail */}
                 <span>support@sambodhan.gov.np</span>
               </li>
               <li className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: MapPin */}
                 <span>Singha Durbar, Kathmandu, Nepal</span>
               </li>
             </ul>
