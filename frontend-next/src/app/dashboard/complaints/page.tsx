@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import apiClient from '../../lib/api-client';
+import apiClient from '@/lib/api-client';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 
 interface Complaint {
