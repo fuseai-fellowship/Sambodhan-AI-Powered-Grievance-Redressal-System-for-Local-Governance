@@ -1,14 +1,15 @@
-const path = require('path');
+import path from 'path';
+import { NextConfig } from 'next';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  turbopack: {
-    resolveOptions: {
-      alias: {
-        '@': path.resolve(__dirname, 'src'),
-      },
-    },
+const nextConfig: NextConfig = {
+  // Turbopack config can be empty for now
+  turbopack: {},
+
+  // Webpack alias
+  webpack: (config: any) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    return config;
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
