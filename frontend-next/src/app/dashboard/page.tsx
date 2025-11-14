@@ -62,7 +62,7 @@ function AdminAnalyticsDashboard() {
 
       {/* Workflow & Analytics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-        <PerformanceBenchmark data={performance} loading={loading} />
+        <PerformanceBenchmark data={performance} loading={loading} stats={{}} statsLoading={false} />
         <QualityMetricsChart data={qualityMetrics} loading={loading} />
       </div>
 
@@ -84,7 +84,7 @@ function AdminAnalyticsDashboard() {
 
 // Footer from LandingPage
 // ...existing DashboardFooter code...
-import { User, Clock, CheckCircle2, TrendingUp, FileText, CheckCircle, Info, MapPin, Zap, Wrench, Trash2, Send, Phone, Mail } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
@@ -402,21 +402,21 @@ const Dashboard = () => {
       valueColor: "text-red-600",
     },
     {
-      icon: <CheckCircle2 className="w-6 h-6 text-gray-500" />,
+      icon: null,
       title: "Resolved",
       value: stats.resolved,
       subtitle: `${Math.round((stats.resolved / (stats.total || 1)) * 100)}% success rate`,
       valueColor: "text-green-600",
     },
     {
-      icon: <Clock className="w-6 h-6 text-gray-500" />,
+      icon: null,
       title: "Active Cases",
       value: stats.active,
       subtitle: "In progress",
       valueColor: "text-blue-600",
     },
     {
-      icon: <TrendingUp className="w-6 h-6 text-gray-500" />,
+      icon: null,
       title: "Avg. Resolution",
       value: `${stats.avgResolution} days`,
       subtitle: "Better than average",
@@ -469,9 +469,9 @@ const Dashboard = () => {
   };
 
   const icons: Record<string, React.ReactNode> = {
-    Electricity: <Zap className="w-4 h-4" />,
-    Infrastructure: <Wrench className="w-4 h-4" />,
-    Sanitation: <Trash2 className="w-4 h-4" />,
+    Electricity: null,
+    Infrastructure: null,
+    Sanitation: null,
   };
 
   // Map real complaints to recent grievances (top 3 latest)
@@ -588,7 +588,7 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-gray-700">
-            <User className="w-5 h-5" />
+            {/* Removed missing icon: User */}
             <span className="text-base font-semibold">{user?.name || "User"}</span>
           </div>
           <button
@@ -732,11 +732,11 @@ const Dashboard = () => {
                           {/* Footer Row */}
                           <div className="flex items-center gap-4 text-xs text-gray-500 pt-3 border-t border-gray-200">
                             <div className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5" />
+                              {/* Removed missing icon: MapPin */}
                               <span>{g.location}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Info className="w-3.5 h-3.5" />
+                              {/* Removed missing icon: Info */}
                               <span>{g.ward}</span>
                             </div>
                           </div>
@@ -906,7 +906,7 @@ const Dashboard = () => {
                             </div>
 
                             {/* Message */}
-                            <div className="mb-4 flex-grow">
+                            <div className="mb-4 grow">
                               <p className="text-xs font-semibold text-gray-500 mb-1">Description:</p>
                               <p className="text-sm text-gray-600 line-clamp-3">
                                 {g.message && g.message.trim() !== '' 
@@ -1007,18 +1007,14 @@ const Dashboard = () => {
           {activeTab === "Community" && (
             <section className="bg-white p-6 rounded-xl shadow-sm border mt-8">
               <div className="flex items-center gap-2 mb-2">
-                <Info className="w-5 h-5 text-gray-600" />
+                {/* Removed missing icon: Info */}
                 <h2 className="font-semibold text-gray-800 text-lg">Community Updates</h2>
               </div>
               <p className="text-sm text-gray-500 mb-4">Latest news from Ward 12</p>
               <div className="space-y-5">
                 {updates.map((u, i) => (
                   <div key={i} className="flex items-start gap-3 border-t pt-3 first:border-t-0 first:pt-0">
-                    {u.type === "success" ? (
-                      <CheckCircle className="text-green-600 w-5 h-5 mt-0.5" />
-                    ) : (
-                      <Info className="text-blue-500 w-5 h-5 mt-0.5" />
-                    )}
+                    {u.type === "success" ? null : null}
                     <div>
                       <h3 className="font-medium text-gray-800">{u.title}</h3>
                       <p className="text-sm text-gray-600">{u.desc}</p>
@@ -1032,7 +1028,7 @@ const Dashboard = () => {
           {activeTab === "Support" && (
             <div className="mt-8 space-y-6">
               {/* Header */}
-              <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-8 text-white">
+              <div className="bg-linear-to-r from-red-600 to-red-700 rounded-xl p-8 text-white">
                 <h2 className="text-2xl font-bold mb-2">Need Help?</h2>
                 <p className="text-red-100">We're here to assist you with your grievances and questions.</p>
               </div>
@@ -1392,15 +1388,15 @@ const Dashboard = () => {
             <h4 className="font-semibold text-lg mb-3">Contact Information</h4>
             <ul className="space-y-3 text-sm text-gray-200">
               <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: Phone */}
                 <span>+977-1-4211000</span>
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: Mail */}
                 <span>support@sambodhan.gov.np</span>
               </li>
               <li className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-300" strokeWidth={2} />
+                {/* Removed missing icon: MapPin */}
                 <span>Singha Durbar, Kathmandu, Nepal</span>
               </li>
             </ul>

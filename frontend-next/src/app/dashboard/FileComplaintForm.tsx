@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { MapPin, FileText, ChevronDown, CheckCircle, Info, Send, AlertCircle } from 'lucide-react';
+import { FileText, ChevronDown } from 'lucide-react';
 // Types for location objects
 type District = {
   id: number;
@@ -175,7 +175,7 @@ export default function FileComplaintForm() {
           // Success Screen
           <div className="bg-white rounded-xl shadow-md p-8 text-center border border-gray-100">
             <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+              {/* Removed missing icon: CheckCircle */}
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Complaint Submitted Successfully!</h2>
             <p className="text-gray-600 mb-6">
@@ -223,7 +223,7 @@ export default function FileComplaintForm() {
             {/* Info Banner */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 m-6 rounded-r-md">
               <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                {/* Removed missing icon: Info */}
                 <div className="text-sm text-blue-800">
                   <p className="font-semibold mb-1">Tips for a Better Response:</p>
                   <ul className="list-disc list-inside space-y-1 text-blue-700">
@@ -239,7 +239,7 @@ export default function FileComplaintForm() {
               {/* Location Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
-                  <MapPin className="w-5 h-5 text-[#E8214A]" />
+                  {/* Removed missing icon: MapPin */}
                   <h2 className="text-lg font-semibold text-gray-900">Location Details</h2>
                 </div>
 
@@ -356,7 +356,7 @@ export default function FileComplaintForm() {
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                    {/* Removed missing icon: AlertCircle */}
                     <p className="text-red-800 text-sm font-medium">{error}</p>
                   </div>
                 </div>
@@ -376,7 +376,7 @@ export default function FileComplaintForm() {
                     </>
                   ) : (
                     <>
-                      <Send className="w-5 h-5" />
+                      {/* Removed missing icon: Send */}
                       Submit Grievance
                     </>
                   )}
@@ -386,7 +386,7 @@ export default function FileComplaintForm() {
               {/* Help Section */}
               <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-[#E8214A]" />
+                  {/* Removed missing icon: Info */}
                   Need Help?
                 </h3>
                 <p className="text-sm text-gray-600 mb-3">
