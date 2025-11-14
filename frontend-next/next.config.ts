@@ -12,7 +12,7 @@ const nextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  webpack: (config) => {
+  webpack: (config: any) => {
     config.resolve.alias['@'] = path.resolve(process.cwd(), 'src');
     return config;
   },

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
-import apiClient from '../lib/api-client';
+import apiClient from '@/lib/api-client';
 import { User, AuthResponse } from '@/types';
 
 interface AuthContextType {
