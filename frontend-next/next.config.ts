@@ -1,18 +1,20 @@
 import path from "path";
+import { NextConfig } from "next";
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*", // Proxy to FastAPI backend
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`, // Use Vercel env or localhost in dev
       },
     ];
   },
-  turbopack: {
-    root: process.cwd(),
-  },
-  webpack: (config: any) => {
+
+  webpack: (config) => {
+    if (!config.resolve) config.resolve = {};
+    if (!config.resolve.alias) config.resolve.alias = {};
+
     config.resolve.alias['@'] = path.resolve(process.cwd(), 'src');
     return config;
   },
