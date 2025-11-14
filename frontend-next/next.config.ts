@@ -1,7 +1,6 @@
 import path from "path";
-import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   async rewrites() {
     return [
       {
@@ -11,10 +10,10 @@ const nextConfig: NextConfig = {
     ];
   },
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
   },
   webpack: (config) => {
-    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    config.resolve.alias['@'] = path.resolve(process.cwd(), 'src');
     return config;
   },
 };
