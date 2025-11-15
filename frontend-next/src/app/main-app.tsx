@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { LandingPage } from '../components/LandingPage';
+import LandingPage from '../components/LandingPage';
 import { AuthPage } from '../components/AuthPage';
 import { AdminAuthPage } from '../components/AdminAuthPage';
 import { CitizenDashboard } from '../components/CitizenDashboard';

@@ -47,7 +47,7 @@ export default function QualityMetricsChart({ data, loading }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100" style={{ minWidth: 350, minHeight: 300 }}>
       <div className="flex items-center gap-2 mb-4">
         <Activity className="w-5 h-5 text-[#DC143C]" />
         <h3 className="text-gray-800 font-semibold text-lg">Quality Metrics Trend</h3>
@@ -62,7 +62,7 @@ export default function QualityMetricsChart({ data, loading }) {
           </div>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={280} minWidth={350} minHeight={300}>
           <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 

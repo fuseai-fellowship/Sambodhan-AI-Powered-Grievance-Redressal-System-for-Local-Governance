@@ -68,7 +68,7 @@ export default function FileComplaintPage() {
   useEffect(() => {
     const loadDistricts = async () => {
       try {
-        const response = await apiClient.get('/locations/districts/');
+        const response = await apiClient.get('/location/districts/');
         setDistricts(response.data);
       } catch (err) {
         console.error('Failed to load districts:', err);
@@ -110,7 +110,7 @@ export default function FileComplaintPage() {
     if (selectedMunicipalityId) {
       setLoadingWards(true);
       apiClient
-        .get(`/locations/wards/?municipality_id=${selectedMunicipalityId}`)
+        .get(`/location/wards/?municipality_id=${selectedMunicipalityId}`)
         .then((response) => {
           setWards(response.data);
           setValue('ward_id', '');

@@ -29,6 +29,7 @@ type Ward = {
   municipality?: Municipality;
 };
 import apiClient from '@/lib/api-client';
+import Cookies from 'js-cookie';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function FileComplaintForm() {
@@ -54,7 +55,7 @@ export default function FileComplaintForm() {
   useEffect(() => {
     setDistrictsLoading(true);
     setDistrictsError('');
-    apiClient.get('/locations/districts/')
+    apiClient.get('/location/districts/')
       .then(res => {
         const data = Array.isArray(res.data) ? res.data : [];
         setDistricts(data);
@@ -69,7 +70,7 @@ export default function FileComplaintForm() {
 
   useEffect(() => {
     if (form.district_id) {
-        apiClient.get(`/locations/municipalities/?district_id=${form.district_id}`).then(res => {
+        apiClient.get(`/location/municipalities/?district_id=${form.district_id}`).then(res => {
         const data = Array.isArray(res.data) ? res.data : [];
         setMunicipalities(data);
       });
@@ -81,7 +82,7 @@ export default function FileComplaintForm() {
 
   useEffect(() => {
     if (form.municipality_id) {
-        apiClient.get(`/locations/wards/?municipality_id=${form.municipality_id}`).then(res => {
+        apiClient.get(`/location/wards/?municipality_id=${form.municipality_id}`).then(res => {
         const data = Array.isArray(res.data) ? res.data : [];
         setWards(data);
       });
@@ -137,7 +138,10 @@ export default function FileComplaintForm() {
 
       console.log('Submitting payload:', payload);
     // 4. Send to backend
-    await apiClient.post('http://localhost:8000/api/complaints', payload)
+    const token = Cookies.get('sambodhan_token');
+    await apiClient.post('/complaints', payload, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
         .catch(err => {
           if (err?.response) {
             console.error('API error:', {

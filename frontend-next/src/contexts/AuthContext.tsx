@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await apiClient.get<User>('/chatbot/auth/me');
+      const response = await apiClient.get<User>('/chatbot/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setUser(response.data);
     } catch (error) {
       console.error('Failed to load user:', error);

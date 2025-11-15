@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Info, Send } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 
 export default function SubmitGrievanceForm() {
   const [formData, setFormData] = useState({
@@ -18,7 +18,7 @@ export default function SubmitGrievanceForm() {
       (async () => {
         try {
           const apiClient = (await import('@/lib/api-client')).default;
-          const res = await apiClient.get(`/locations/wards/?municipality_id=${formData.municipality}`);
+          const res = await apiClient.get(`/location/wards/?municipality_id=${formData.municipality}`);
           setWards(res.data);
         } catch {
           setWards([]);
@@ -30,12 +30,6 @@ export default function SubmitGrievanceForm() {
       setWards([]);
     }
   }, [formData.municipality]);
-  const [formData, setFormData] = useState({
-    district: '',
-    municipality: '',
-      ward_id: '', // store ward_id as string, convert to number for payload
-    description: '',
-  });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
@@ -90,7 +84,12 @@ export default function SubmitGrievanceForm() {
         department: predictedDepartment,
       };
   // POST to backend (correct endpoint)
-  const res = await (await import('@/lib/api-client')).default.post('/api/complaints', payload);
+  const token = typeof window !== 'undefined' ? window.localStorage.getItem('sambodhan_token') : null;
+  const res = await (await import('@/lib/api-client')).default.post('/api/complaints', payload, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  });
       setSuccess('Grievance submitted successfully!');
       setFormData({
         district: '',
