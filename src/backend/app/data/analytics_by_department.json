@@ -1,15 +1,10 @@
 {
-  "last_updated": "2025-11-13T14:06:31.557662+00:00",
+  "last_updated": "2025-11-15T08:46:49.084341+00:00",
   "data": {
     "Education, Health & Social Welfare": {
-      "total": 49,
+      "total": 48,
       "resolved": 7,
-      "rate": 14.285714285714286
-    },
-    "Unclassified": {
-      "total": 1,
-      "resolved": 0,
-      "rate": 0.0
+      "rate": 14.583333333333334
     },
     "Security & Law Enforcement": {
       "total": 58,
@@ -18,13 +13,13 @@
     },
     "Municipal Governance & Community Services": {
       "total": 161,
-      "resolved": 46,
-      "rate": 28.571428571428573
+      "resolved": 47,
+      "rate": 29.19254658385093
     },
     "Infrastructure, Utilities & Natural Resources": {
-      "total": 84,
+      "total": 87,
       "resolved": 10,
-      "rate": 11.904761904761905
+      "rate": 11.494252873563218
     }
   }
 }

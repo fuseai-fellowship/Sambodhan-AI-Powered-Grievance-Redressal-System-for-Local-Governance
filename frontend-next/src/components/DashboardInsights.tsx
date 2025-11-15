@@ -42,7 +42,10 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints, onQui
   // Example: Build categoryData from department_name
   const categoryCount: { [key: string]: number } = {};
   complaints.forEach((c) => {
-    const cat = c.department_name || "Other";
+    // Use department_name if present, else fallback to department, else 'Other'
+    const cat = c.department_name && c.department_name.trim() !== ''
+      ? c.department_name
+      : (c.department && c.department.trim() !== '' ? c.department : "Other");
     categoryCount[cat] = (categoryCount[cat] || 0) + 1;
   });
   const colors = ["#dc2626", "#1e3a8a", "#16a34a", "#f59e0b", "#6366f1", "#0ea5e9", "#f43f5e"];

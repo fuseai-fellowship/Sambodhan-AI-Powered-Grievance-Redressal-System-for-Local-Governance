@@ -140,7 +140,10 @@ def read_wards(
     is_active: bool = True,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Ward).filter(Ward.is_active == is_active)
+    from sqlalchemy.orm import joinedload
+    query = db.query(Ward).options(
+        joinedload(Ward.municipality).joinedload(Municipality.district)
+    ).filter(Ward.is_active == is_active)
     if municipality_id:
         query = query.filter(Ward.municipality_id == municipality_id)
     return query.offset(skip).limit(limit).all()

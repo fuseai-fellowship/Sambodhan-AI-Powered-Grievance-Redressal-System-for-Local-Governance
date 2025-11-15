@@ -29,7 +29,23 @@ export default function ComplaintsPage() {
 
   const loadComplaints = async () => {
     try {
-      const response = await apiClient.get('/chatbot/auth/complaints');
+      const token = typeof window !== 'undefined' ? window.localStorage.getItem('sambodhan_token') : null;
+      // Get current user from localStorage or context
+      let userId = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const userRaw = window.localStorage.getItem('sambodhan_user');
+          if (userRaw) {
+            const userObj = JSON.parse(userRaw);
+            userId = userObj?.id;
+          }
+        } catch {}
+      }
+      const response = await apiClient.get(`/complaints?citizen_id=${userId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
       setComplaints(response.data);
     } catch (err) {
       console.error('Failed to load complaints:', err);
@@ -230,7 +246,7 @@ export default function ComplaintsPage() {
                 </div>
                 <Link
                   href={`/dashboard/complaints/${complaint.id}`}
-                  className="ml-4 flex-shrink-0 inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  className="ml-4 shrink-0 inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   View

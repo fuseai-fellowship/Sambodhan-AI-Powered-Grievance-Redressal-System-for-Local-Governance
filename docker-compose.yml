@@ -1,1 +1,19 @@
-# Docker Compose file
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./src/backend/.env
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-next
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

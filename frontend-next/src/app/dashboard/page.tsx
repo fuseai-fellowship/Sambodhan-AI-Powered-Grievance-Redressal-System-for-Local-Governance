@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import apiClient from "../../lib/api-client";
+import apiClient from "@/lib/api-client";
+import Cookies from "js-cookie";
 import DashboardInsights from "@/components/DashboardInsights";
 import FileComplaintForm from './FileComplaintForm';
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -62,7 +63,7 @@ function AdminAnalyticsDashboard() {
 
       {/* Workflow & Analytics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-        <PerformanceBenchmark data={performance} loading={loading} stats={{}} statsLoading={false} />
+        <PerformanceBenchmark data={performance} loading={loading} stats={summary} statsLoading={loading} />
         <QualityMetricsChart data={qualityMetrics} loading={loading} />
       </div>
 
@@ -121,34 +122,49 @@ const Dashboard = () => {
   const [loadingDistricts, setLoadingDistricts] = useState(true);
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
-
-  // Add react-hook-form for grievance submission (must be before any use of watch)
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm({});
-
-  // Sync selected district/municipality with form values
-  const selectedDistrictId = watch('district_id');
-  const selectedMunicipalityId = watch('municipality_id');
-
-  // Load districts on mount
-  useEffect(() => {
-    setLoadingDistricts(true);
-    apiClient.get('/locations/districts/')
-      .then((res: { data: any }) => setDistricts(res.data))
-      .catch(() => setDistricts([]))
-      .finally(() => setLoadingDistricts(false));
-  }, []);
-
+  // Location selection states
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState<string | null>(null);
+  const [municipalities, setMunicipalities] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+  // Citizen dashboard analytics states
+  const [stats, setStats] = useState<any>(null);
+  const [qualityMetrics, setQualityMetrics] = useState<any>(null);
+  const [issueBreakdown, setIssueBreakdown] = useState<any>(null);
+  const [locationHotspots, setLocationHotspots] = useState<any>(null);
+  const [responseTime, setResponseTime] = useState<any>(null);
+  // Tabs and form states
+  const [activeTab, setActiveTab] = useState<string>('Dashboard');
+  const [formData, setFormData] = useState<any>({
+    title: '',
+    description: '',
+    ward_id: '',
+    location: '',
+    phone: '+977-9841234567',
+    category: '',
+    file: undefined,
+  });
+  const [categories, setCategories] = useState<any[]>([]);
+  const [success, setSuccess] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loadingForm, setLoadingForm] = useState<boolean>(false);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const fileInputRef = useRef(null);
+  // Complaints and stats
+  type Complaint = {
+    id: number;
+    status_name: string;
+    [key: string]: any;
+  };
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  // Pagination state for My Grievances
+  const [currentPage, setCurrentPage] = useState<number>(1);
   // Load municipalities when district changes
   useEffect(() => {
     if (selectedDistrictId) {
       setLoadingMunicipalities(true);
-      apiClient.get(`/locations/municipalities/?district_id=${selectedDistrictId}`)
-        .then((res: { data: any }) => setMunicipalities(res.data))
+      apiClient.get(`/location/municipalities/?district_id=${selectedDistrictId}`)
+        .then(res => setMunicipalities(res.data))
         .catch(() => setMunicipalities([]))
         .finally(() => setLoadingMunicipalities(false));
     } else {
@@ -161,102 +177,44 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedMunicipalityId) {
       setLoadingWards(true);
-      apiClient.get(`/locations/wards/?municipality_id=${selectedMunicipalityId}`)
-        .then((res: { data: any }) => setWards(res.data))
+      apiClient.get(`/location/wards/?municipality_id=${selectedMunicipalityId}`)
+        .then(res => setWards(res.data))
         .catch(() => setWards([]))
         .finally(() => setLoadingWards(false));
     } else {
       setWards([]);
     }
   }, [selectedMunicipalityId]);
-  // Add react-hook-form for grievance submission
 
-  // Grievance form submission handler
-  const onSubmit = async (data: any) => {
-    setLoadingForm(true);
-    setError('');
-    setSuccess('');
-    try {
-      // 1. Call HuggingFace API for urgency classification
-      const urgencyRes = await fetch('https://kar137-sambodhan-urgency-classifier-space.hf.space/predict_urgency', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: data.description })
-      });
-      const urgencyData = await urgencyRes.json();
-      const urgency = urgencyData?.label || 'unknown';
+  return (
+    <div className="mb-12 px-2 md:px-0">
+      <h2 className="text-2xl font-bold mb-6">Citizen Dashboard</h2>
+      {/* Overview & Team Performance */}
+      <SummaryCards data={stats} loading={loading} />
 
-      // 2. Call HuggingFace API for department classification
-      const deptRes = await fetch('https://mr-kush-sambodhan-department-classifier.hf.space/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: data.description })
-      });
-      const deptData = await deptRes.json();
-      const department = deptData?.label || 'unknown';
+      {/* Workflow & Analytics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <PerformanceBenchmark data={user} loading={loading} stats={stats} statsLoading={loading} />
+        <QualityMetricsChart data={qualityMetrics} loading={loading} />
+      </div>
 
-      // 3. Build FormData payload including all fields, urgency, department, and file
-      const payload = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'file' && value && (value as FileList).length > 0) {
-          payload.append('file', (value as FileList)[0]);
-        } else if (value !== null && value !== undefined) {
-          payload.append(key, value as string);
-        }
-      });
-      payload.append('urgency', urgency);
-      payload.append('department', department);
+      {/* My Cases & Issue Type Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <AdminGrievanceManager user={user} />
+        <IssueBreakdownTable data={issueBreakdown} loading={loading} />
+      </div>
 
-      // 4. Send to backend/database
-      await apiClient.post('/chatbot/auth/complaints', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setSuccess('Grievance submitted successfully!');
-      setShowConfirm(false);
-    } catch (err) {
-      setError('Failed to submit grievance. Please try again.');
-    } finally {
-      setLoadingForm(false);
-    }
-  };
-  const [activeTab, setActiveTab] = useState('Dashboard');
-  // Enhanced grievance form state
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    ward_id: '',
-    location: '',
-    phone: '+977-9841234567',
-    category: '',
-    file: undefined as FileList | undefined,
-  });
-  type Category = { id: number; name: string };
-  type Ward = { id: number; ward_number: number };
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [loadingForm, setLoadingForm] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const fileInputRef = useRef(null);
-  type Complaint = {
-    id: number;
-    status_name: string;
-    [key: string]: any;
-  };
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    resolved: 0,
-    active: 0,
-    avgResolution: 0,
-  });
-  // Pagination state for My Grievances
-  const [currentPage, setCurrentPage] = useState(1);
+      {/* Location Hotspots & Response Time Distribution */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <LocationHotspotsChart data={locationHotspots} loading={loading} />
+        <ResponseTimeChart data={responseTime} loading={loading} />
+      </div>
+    </div>
+  );
   const itemsPerPage = 5;
   // Dropdown states
   const [districts, setDistricts] = useState([]);
-  const [municipalities, setMunicipalities] = useState([]);
-  const [wards, setWards] = useState([]);
+  // (already declared above)
   
   // Modal state for viewing complaint details
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
@@ -270,7 +228,7 @@ const Dashboard = () => {
     setActiveTab('Submit Grievance');
     // Pre-fill the form with the action name
     setTimeout(() => {
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         title: actionName,
         description: `I want to report: ${actionName}`,
@@ -295,11 +253,11 @@ const Dashboard = () => {
     
     setDeleting(true);
     try {
-      await apiClient.delete(`/api/complaints/${complaintToDelete}`);
+      await apiClient.delete(`/complaints/${complaintToDelete}`);
       // Remove from local state
       setComplaints(prev => prev.filter(c => c.id !== complaintToDelete));
       // Update stats
-      setStats(prev => ({
+      setStats((prev: any) => ({
         ...prev,
         total: prev.total - 1,
       }));
@@ -314,13 +272,13 @@ const Dashboard = () => {
 
   // Load categories and wards (simulate API)
   useEffect(() => {
-  apiClient.get('/chatbot/departments').then((res: { data: any }) => setCategories(res.data)).catch(() => setCategories([]));
-    apiClient.get('/locations/wards/').then((res: { data: any }) => setWards(res.data)).catch(() => setWards([]));
+  apiClient.get('/chatbot/departments').then(res => setCategories(res.data)).catch(() => setCategories([]));
+    apiClient.get('/location/wards/').then(res => setWards(res.data)).catch(() => setWards([]));
   }, []);
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, files } = e.target as HTMLInputElement;
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [name]: files ? files : value
     }));
@@ -348,8 +306,12 @@ const Dashboard = () => {
           payload.append(key, value as string);
         }
       });
-      await apiClient.post('/chatbot/auth/complaints', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const token = Cookies.get('sambodhan_token');
+      await apiClient.post('/api/complaints', payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
       });
       setSuccess('Grievance submitted successfully!');
   setFormData({ title: '', description: '', ward_id: '', location: '', phone: '+977-9841234567', category: '', file: undefined });
@@ -367,17 +329,24 @@ const Dashboard = () => {
     // }
     // Fetch complaints only once on mount
     useEffect(() => {
-      apiClient.get("/chatbot/auth/complaints")
-        .then((res: any) => {
-          console.log("Complaints API Response:", res.data);
-          if (res.data.length > 0) {
-            console.log("First complaint sample:", res.data[0]);
+      const token = Cookies.get('sambodhan_token');
+      apiClient.get(`/complaints?citizen_id=${user?.id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      })
+        .then(res => {
+          // Filter complaints by current user (defensive, in case backend returns all)
+          const userComplaints = res.data.filter((c: Complaint) => c.citizen_id === user?.id);
+          console.log("Complaints API Response:", userComplaints);
+          if (userComplaints.length > 0) {
+            console.log("First complaint sample:", userComplaints[0]);
           }
-          setComplaints(res.data);
+          setComplaints(userComplaints);
           // Calculate stats
-          const total = res.data.length;
-          const resolved = res.data.filter((c: Complaint) => c.status_name === "Resolved").length;
-          const active = res.data.filter((c: Complaint) => c.status_name === "In Progress").length;
+          const total = userComplaints.length;
+          const resolved = userComplaints.filter((c: Complaint) => c.status_name === "Resolved").length;
+          const active = userComplaints.filter((c: Complaint) => c.status_name === "In Progress").length;
           setStats({
             total,
             resolved,
@@ -483,51 +452,74 @@ const Dashboard = () => {
     };
     let statusLabel = statusMap[g.current_status] || statusMap[g.status_name] || 'Pending';
 
-    // Extract location info
+    // Prefer complaint.ward (nested object from backend) for location mapping
     let municipalityName = '';
     let districtName = '';
-    let wardNumber = null;
-
-    // Try municipality_name and district_name from top level first
-    if (g.municipality_name && g.municipality_name.trim() !== '') {
-      municipalityName = g.municipality_name;
-    }
-    if (g.district_name && g.district_name.trim() !== '') {
-      districtName = g.district_name;
-    }
-
-    // Fallback to nested ward object
-    if (!municipalityName && g.ward?.municipality) {
-      municipalityName = g.ward.municipality.name || '';
-      if (!districtName && g.ward.municipality.district) {
-        districtName = g.ward.municipality.district.name || '';
+    let wardNumber = '';
+    if (g.ward) {
+      wardNumber = g.ward.ward_number ? g.ward.ward_number.toString() : '';
+      municipalityName = g.ward.municipality?.name || '';
+      districtName = g.ward.municipality?.district?.name || '';
+    } else {
+      // Fallback to wards array if g.ward is missing
+      let wardObj = null;
+      if (g.ward_id && Array.isArray(wards)) {
+        wardObj = wards.find((w) => w.id === g.ward_id);
+      }
+      if (wardObj) {
+        wardNumber = wardObj.ward_number ? wardObj.ward_number.toString() : '';
+        municipalityName = wardObj.municipality?.name || '';
+        districtName = wardObj.municipality?.district?.name || '';
+      } else {
+        // Fallback only if wardObj is not found
+        if (g.municipality_name && g.municipality_name.trim() !== '') {
+          municipalityName = g.municipality_name;
+        } else if (g.ward?.municipality?.name) {
+          municipalityName = g.ward.municipality.name;
+        }
+        if (g.district_name && g.district_name.trim() !== '') {
+          districtName = g.district_name;
+        } else if (g.ward?.municipality?.district?.name) {
+          districtName = g.ward.municipality.district.name;
+        }
+        if (g.ward_name && g.ward_name.trim() !== '') {
+          wardNumber = g.ward_name;
+        } else if (g.ward && typeof g.ward.ward_number !== 'undefined' && g.ward.ward_number !== null) {
+          wardNumber = g.ward.ward_number.toString();
+        } else if (g.ward_id && g.ward_id > 0) {
+          wardNumber = g.ward_id.toString();
+        }
       }
     }
-    
-    // Get ward number/name
-    if (g.ward_name && g.ward_name.trim() !== '') {
-      wardNumber = g.ward_name;
-    } else if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
-      wardNumber = g.ward.ward_number;
+    // Compose location string
+    let location = '';
+    if (municipalityName && districtName) {
+      location = `${municipalityName}, ${districtName}`;
+    } else if (municipalityName) {
+      location = municipalityName;
+    } else if (districtName) {
+      location = districtName;
+    } else {
+      location = '-';
+    }
+    // Compose ward display
+    let wardDisplay = '-';
+    if (wardNumber && wardNumber !== '0' && wardNumber.trim() !== '') {
+      wardDisplay = `Ward ${wardNumber}`;
     }
 
-    const location = municipalityName && districtName 
-      ? `${municipalityName}, ${districtName}` 
-      : municipalityName || districtName || 'Location not specified';
-    
-    const wardDisplay = (wardNumber && (typeof wardNumber === 'string' ? wardNumber.trim() !== '' : wardNumber > 0)) 
-      ? `Ward ${wardNumber}` 
-      : (g.ward_id && g.ward_id > 0 ? `Ward ID: ${g.ward_id}` : '-');
+    // Department - use department_name if present, else department, else 'General'
+    const department = (g.department_name && g.department_name.trim() !== '')
+      ? g.department_name
+      : (g.department && g.department.trim() !== '' ? g.department : 'General');
 
-    // Department - use department_name from API
-    const department = (g.department_name && g.department_name.trim() !== '') 
-      ? g.department_name 
-      : 'General';
-
-    // Urgency - use urgency_name from API
-    const urgency = (g.urgency_name && g.urgency_name.trim() !== '') 
-      ? g.urgency_name.toUpperCase()  // Ensure uppercase for consistency
-      : 'NORMAL';
+    // Urgency - use urgency_name, else urgency, else '-'
+    let urgency = '-';
+    if (g.urgency_name && g.urgency_name.trim() !== '') {
+      urgency = g.urgency_name.toUpperCase();
+    } else if (g.urgency && g.urgency.trim() !== '') {
+      urgency = g.urgency.toUpperCase();
+    }
 
     // Format date
     const formattedDate = g.created_at 
@@ -784,22 +776,18 @@ const Dashboard = () => {
                           'Resolved': 'Resolved',
                           'Rejected': 'Rejected',
                         };
-                        // Try all possible status fields
                         let statusLabel = statusMap[g.current_status];
                         if (!statusLabel && g.status_name) statusLabel = statusMap[g.status_name] || g.status_name;
                         if (!statusLabel && typeof g.status === 'number') statusLabel = statusMap[g.status];
                         if (!statusLabel && typeof g.status === 'string') statusLabel = statusMap[g.status] || g.status;
                         if (!statusLabel) statusLabel = 'Pending';
 
-                        // Ward display: handle missing, zero, or string cases
+                        // Ward display
                         let wardDisplay = '-';
                         let wardNumber = null;
-                        
-                        // Try ward_name first (from the API response we see ward_name: "")
                         if (g.ward_name && g.ward_name.trim() !== '') {
                           wardDisplay = g.ward_name;
                         } else if (g.ward && (g.ward.ward_number || g.ward.ward_number === 0)) {
-                          // Check nested ward object
                           wardNumber = g.ward.ward_number;
                           if (typeof wardNumber === 'number' && wardNumber > 0) {
                             wardDisplay = `Ward ${wardNumber}`;
@@ -807,23 +795,27 @@ const Dashboard = () => {
                             wardDisplay = `Ward ${wardNumber}`;
                           }
                         } else if (g.ward_number && g.ward_number !== '0' && g.ward_number !== 0) {
-                          // Check top-level ward_number
                           wardDisplay = `Ward ${g.ward_number}`;
                           wardNumber = g.ward_number;
                         } else if (g.ward_id && g.ward_id > 0) {
-                          // If we have ward_id but no name/number, just show the ID
                           wardDisplay = `Ward ID: ${g.ward_id}`;
                         }
 
-                        // Department display - use department_name from API
-                        const departmentDisplay = (g.department_name && g.department_name.trim() !== '') 
-                          ? g.department_name 
-                          : 'General';
+                        // Department display: prefer department field, then department_name, else 'General'
+                        let departmentDisplay = 'General';
+                        if (g.department && g.department.trim() !== '') {
+                          departmentDisplay = g.department;
+                        } else if (g.department_name && g.department_name.trim() !== '') {
+                          departmentDisplay = g.department_name;
+                        }
 
-                        // Urgency display - use urgency_name from API
-                        const urgencyDisplay = (g.urgency_name && g.urgency_name.trim() !== '') 
-                          ? g.urgency_name.toUpperCase()  // Ensure uppercase for consistency
-                          : 'NORMAL';
+                        // Urgency display: prefer urgency field, then urgency_name, else 'NORMAL'
+                        let urgencyDisplay = 'NORMAL';
+                        if (g.urgency && g.urgency.trim() !== '') {
+                          urgencyDisplay = g.urgency.toUpperCase();
+                        } else if (g.urgency_name && g.urgency_name.trim() !== '') {
+                          urgencyDisplay = g.urgency_name.toUpperCase();
+                        }
 
                         // Format date
                         const formattedDate = g.created_at 
@@ -838,24 +830,18 @@ const Dashboard = () => {
                         let locationDisplay = '';
                         let municipalityName = '';
                         let districtName = '';
-                        
-                        // Try municipality_name and district_name from top level first
                         if (g.municipality_name && g.municipality_name.trim() !== '') {
                           municipalityName = g.municipality_name;
                         }
                         if (g.district_name && g.district_name.trim() !== '') {
                           districtName = g.district_name;
                         }
-                        
-                        // Fallback to nested ward.municipality.district structure
                         if (!municipalityName && g.ward?.municipality) {
                           municipalityName = g.ward.municipality.name || '';
                           if (!districtName && g.ward.municipality.district) {
                             districtName = g.ward.municipality.district.name || '';
                           }
                         }
-                        
-                        // Build location string
                         if (municipalityName && districtName) {
                           locationDisplay = `${municipalityName}, ${districtName}`;
                         } else if (municipalityName) {
@@ -1252,15 +1238,15 @@ const Dashboard = () => {
               <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                 <div>
                   <span className="text-sm text-gray-500">Complaint ID</span>
-                  <p className="text-lg font-bold text-gray-900">#{selectedComplaint.id}</p>
+                  <p className="text-lg font-bold text-gray-900">#{selectedComplaint?.id}</p>
                 </div>
                 <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                  selectedComplaint.status_name === 'Resolved' ? 'bg-green-100 text-green-700' :
-                  selectedComplaint.status_name === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                  selectedComplaint.status_name === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedComplaint?.status_name === 'Resolved' ? 'bg-green-100 text-green-700' :
+                  selectedComplaint?.status_name === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                  selectedComplaint?.status_name === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
                   'bg-red-100 text-red-700'
                 }`}>
-                  {selectedComplaint.status_name || selectedComplaint.current_status || 'Pending'}
+                  {selectedComplaint?.status_name || selectedComplaint?.current_status || 'Pending'}
                 </span>
               </div>
 
@@ -1268,16 +1254,16 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm text-gray-500">Department</span>
-                  <p className="text-base font-semibold text-gray-900">{selectedComplaint.department_name || selectedComplaint.department || 'General'}</p>
+                  <p className="text-base font-semibold text-gray-900">{selectedComplaint?.department_name || selectedComplaint?.department || 'General'}</p>
                 </div>
                 <div>
                   <span className="text-sm text-gray-500">Priority</span>
                   <p className={`text-base font-semibold ${
-                    (selectedComplaint.urgency_name || selectedComplaint.urgency) === 'HIGHLY URGENT' ? 'text-red-600' :
-                    (selectedComplaint.urgency_name || selectedComplaint.urgency) === 'URGENT' ? 'text-orange-600' :
+                    (selectedComplaint?.urgency_name || selectedComplaint?.urgency) === 'HIGHLY URGENT' ? 'text-red-600' :
+                    (selectedComplaint?.urgency_name || selectedComplaint?.urgency) === 'URGENT' ? 'text-orange-600' :
                     'text-gray-600'
                   }`}>
-                    {selectedComplaint.urgency_name || selectedComplaint.urgency || 'NORMAL'}
+                    {selectedComplaint?.urgency_name || selectedComplaint?.urgency || 'NORMAL'}
                   </p>
                 </div>
               </div>
@@ -1287,15 +1273,15 @@ const Dashboard = () => {
                 <div>
                   <span className="text-sm text-gray-500">Location</span>
                   <p className="text-base text-gray-900">
-                    {selectedComplaint.municipality_name && selectedComplaint.district_name
-                      ? `${selectedComplaint.municipality_name}, ${selectedComplaint.district_name}`
-                      : selectedComplaint.municipality_name || selectedComplaint.district_name || 'Not specified'}
+                    {selectedComplaint?.municipality_name && selectedComplaint?.district_name
+                      ? `${selectedComplaint?.municipality_name}, ${selectedComplaint?.district_name}`
+                      : selectedComplaint?.municipality_name || selectedComplaint?.district_name || 'Not specified'}
                   </p>
                 </div>
                 <div>
                   <span className="text-sm text-gray-500">Ward</span>
                   <p className="text-base text-gray-900">
-                    {selectedComplaint.ward_name || (selectedComplaint.ward_number ? `Ward ${selectedComplaint.ward_number}` : '-')}
+                    {selectedComplaint?.ward_name || (selectedComplaint?.ward_number ? `Ward ${selectedComplaint?.ward_number}` : '-')}
                   </p>
                 </div>
               </div>
@@ -1304,8 +1290,8 @@ const Dashboard = () => {
               <div>
                 <span className="text-sm text-gray-500">Date Submitted</span>
                 <p className="text-base text-gray-900">
-                  {selectedComplaint.created_at 
-                    ? new Date(selectedComplaint.created_at).toLocaleDateString('en-US', { 
+                  {selectedComplaint?.created_at
+                    ? new Date(selectedComplaint?.created_at).toLocaleDateString('en-US', {
                         year: 'numeric', month: 'long', day: 'numeric', 
                         hour: '2-digit', minute: '2-digit' 
                       })
@@ -1317,7 +1303,7 @@ const Dashboard = () => {
               <div>
                 <span className="text-sm text-gray-500">Description</span>
                 <p className="text-base text-gray-900 mt-2 p-4 bg-gray-50 rounded-lg leading-relaxed">
-                  {selectedComplaint.message || 'No description provided'}
+                  {selectedComplaint?.message || 'No description provided'}
                 </p>
               </div>
             </div>

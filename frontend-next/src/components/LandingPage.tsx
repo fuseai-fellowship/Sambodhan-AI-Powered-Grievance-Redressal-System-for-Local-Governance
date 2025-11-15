@@ -1,9 +1,13 @@
 import React from "react";
+
+type LandingPageProps = {
+  onNavigate?: (page: string) => void;
+};
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, MessageSquare, Shield } from "lucide-react";
 
-export default function LandingPage() {
+export default function LandingPage({ onNavigate }: LandingPageProps) {
   return (
   <div className="font-inter min-h-screen bg-white">
       {/* Navbar */}
@@ -17,7 +21,7 @@ export default function LandingPage() {
           />
           <div className="flex flex-col">
             <span className="text-lg font-semibold text-red-700 leading-tight">
-              नागरिक गुनासो व्यवस्थापन
+              Sambodhan AI
             </span>
             <span className="text-sm text-blue-700">Citizen Grievance System</span>
           </div>
@@ -38,7 +42,7 @@ export default function LandingPage() {
   <section className="relative flex flex-row items-center justify-between bg-linear-to-br from-red-600 to-red-700 text-white px-16 py-20 min-h-[400px]">
   <div className="flex-1 flex flex-col justify-center items-start text-left pl-0 md:pl-0">
           <h1 className="text-xl md:text-2xl font-bold mb-5 leading-tight">
-            नागरिक गुनासो व्यवस्थापन प्रणाली
+            Sambodhan AI
           </h1>
           <h2 className="text-base md:text-lg font-semibold mb-5">Citizen Grievance Management System</h2>
           <p className="text-sm mb-10 opacity-90 max-w-xl">

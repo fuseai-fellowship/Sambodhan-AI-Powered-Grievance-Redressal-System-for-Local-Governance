@@ -1,11 +1,10 @@
 {
-  "last_updated": "2025-11-13T14:06:27.793512+00:00",
+  "last_updated": "2025-11-15T08:46:45.625702+00:00",
   "data": {
-    "total": 84,
-    "total_complaints": 84,
+    "total": 87,
+    "total_complaints": 87,
     "by_urgency": {
-      "0": 1,
-      "NORMAL": 89,
+      "NORMAL": 91,
       "URGENT": 148,
       "2": 6,
       "HIGHLY URGENT": 103,
@@ -13,14 +12,9 @@
     },
     "by_department": {
       "Education, Health & Social Welfare": {
-        "total": 49,
+        "total": 48,
         "resolved": 7,
-        "rate": 14.285714285714286
-      },
-      "Unclassified": {
-        "total": 1,
-        "resolved": 0,
-        "rate": 0.0
+        "rate": 14.583333333333334
       },
       "Security & Law Enforcement": {
         "total": 58,
@@ -29,21 +23,21 @@
       },
       "Municipal Governance & Community Services": {
         "total": 161,
-        "resolved": 46,
-        "rate": 28.571428571428573
+        "resolved": 47,
+        "rate": 29.19254658385093
       },
       "Infrastructure, Utilities & Natural Resources": {
-        "total": 84,
+        "total": 87,
         "resolved": 10,
-        "rate": 11.904761904761905
+        "rate": 11.494252873563218
       }
     },
     "by_status": {
       "In Process": 64,
       "Rejected": 1,
       "1": 1,
-      "Pending": 214,
-      "Resolved": 71
+      "Pending": 213,
+      "Resolved": 72
     },
     "by_district": {
       "Jhapa": 2,
@@ -52,13 +46,13 @@
       "Parbat": 1,
       "Bhojpur": 7,
       "Kalikot": 2,
-      "Baitadi": 145,
+      "Baitadi": 148,
       "Dadeldhura": 2,
       "Nuwakot": 1,
       "Bhaktapur": 3,
       "Darchula": 1,
       "Bardiya": 3,
-      "Unspecified": 3,
+      "Unspecified": 1,
       "Kavrepalanchok": 1,
       "Bajura": 4,
       "Salyan": 1,
@@ -100,7 +94,7 @@
       "Tilagupha": 1,
       "Khairhani": 9,
       "Panchadewal Binayak": 2,
-      "Puchaudi": 141,
+      "Puchaudi": 143,
       "Sanphebagar": 25,
       "Gadhimai": 1,
       "Suryodaya": 3,
@@ -112,10 +106,10 @@
       "Gulariya": 3,
       "Shailyashikhar": 1,
       "Bhanu": 3,
-      "Dasharathchand": 2,
+      "Dasharathchand": 3,
       "Amargadhi": 2,
       "Budhinanda": 4,
-      "Unspecified": 3,
+      "Unspecified": 1,
       "Panchkhal": 1,
       "Galkot": 3,
       "Raskot": 1,

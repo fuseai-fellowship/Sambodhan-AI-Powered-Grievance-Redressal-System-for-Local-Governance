@@ -153,16 +153,22 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(loginSchema) });
-  const onSubmit = async (data: { email: string; password: string }) => {
+  const onSubmit = async (data: any) => {
     setError("");
     setLoading(true);
     try {
       await login(data.email, data.password);
     } catch (err) {
-      if (typeof err === 'object' && err !== null && 'response' in err && (err as any).response?.data?.detail) {
-        setError((err as any).response.data.detail);
-      } else if (err instanceof Error) {
-        setError(err.message);
+      // Type narrowing for error object
+      if (typeof err === "object" && err !== null) {
+        const anyErr = err as any;
+        if (anyErr.response && anyErr.response.data && anyErr.response.data.detail) {
+          setError(anyErr.response.data.detail);
+        } else if (anyErr.message) {
+          setError(anyErr.message);
+        } else {
+          setError("Login failed. Please try again.");
+        }
       } else {
         setError("Login failed. Please try again.");
       }
@@ -201,7 +207,11 @@ function LoginForm() {
   );
 }
 
-function SignupForm({ setIsLogin }: { setIsLogin: (login: boolean) => void }) {
+interface SignupFormProps {
+  setIsLogin: (value: boolean) => void;
+}
+
+function SignupForm({ setIsLogin }: SignupFormProps) {
   const { signup } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -221,16 +231,22 @@ function SignupForm({ setIsLogin }: { setIsLogin: (login: boolean) => void }) {
     return { score, text: "Strong", color: "bg-green-500" };
   };
   const passwordStrength = getPasswordStrength();
-  const onSubmit = async (data: { name: string; email: string; phone: string; password: string; confirmPassword: string }) => {
+  const onSubmit = async (data: any) => {
     setError("");
     setLoading(true);
     try {
       await signup(data.name, data.email, data.phone, data.password);
     } catch (err) {
-      if (typeof err === 'object' && err !== null && 'response' in err && (err as any).response?.data?.detail) {
-        setError((err as any).response.data.detail);
-      } else if (err instanceof Error) {
-        setError(err.message);
+      // Type narrowing for error object
+      if (typeof err === "object" && err !== null) {
+        const anyErr = err as any;
+        if (anyErr.response && anyErr.response.data && anyErr.response.data.detail) {
+          setError(anyErr.response.data.detail);
+        } else if (anyErr.message) {
+          setError(anyErr.message);
+        } else {
+          setError("Signup failed. Please try again.");
+        }
       } else {
         setError("Signup failed. Please try again.");
       }

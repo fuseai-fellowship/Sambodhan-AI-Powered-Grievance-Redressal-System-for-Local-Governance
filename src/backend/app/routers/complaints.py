@@ -379,3 +379,14 @@ def get_complaint(complaint_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Complaint not found")
     return complaint
 
+# 🔹 DELETE: Delete complaint by ID
+@router.delete("/{complaint_id}", response_model=schemas.ComplaintRead)
+@router.delete("/{complaint_id}")
+def delete_complaint(complaint_id: int, db: Session = Depends(get_db)):
+    complaint = db.query(models.Complaint).filter(models.Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    db.delete(complaint)
+    db.commit()
+    return {"success": True, "deleted_id": complaint_id}
+
