@@ -1,16 +1,14 @@
-import type { NextConfig } from "next";
+import path from 'path';
+import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*", // Proxy to FastAPI backend
-      },
-    ];
-  },
-  turbopack: {
-    root: __dirname,
+  // Turbopack config can be empty for now
+  turbopack: {},
+
+  // Webpack alias
+  webpack: (config: any) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    return config;
   },
 };
 

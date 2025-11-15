@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",        // Project root
+    "paths": {
+      "@/*": ["src/*"]     // Map @ to the src folder
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"]
+}

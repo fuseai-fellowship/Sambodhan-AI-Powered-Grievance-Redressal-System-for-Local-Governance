@@ -11,7 +11,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { MapPin, Zap, Trash2, AlertTriangle, Droplet, Construction, TreeDeciduous, Users } from "lucide-react";
+// Removed invalid Lucide icon imports
 
 type Complaint = {
   id: number;
@@ -55,49 +55,49 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ complaints, onQui
   const quickActions = [
     { 
       name: "Report Pothole", 
-      icon: <Construction className="w-5 h-5" />,
+      icon: null,
       color: "bg-orange-50 hover:bg-orange-100 border-orange-200",
       iconColor: "text-orange-600"
     },
     { 
       name: "Street Light Issue", 
-      icon: <Zap className="w-5 h-5" />,
+      icon: null,
       color: "bg-yellow-50 hover:bg-yellow-100 border-yellow-200",
       iconColor: "text-yellow-600"
     },
     { 
       name: "Garbage Collection", 
-      icon: <Trash2 className="w-5 h-5" />,
+      icon: null,
       color: "bg-green-50 hover:bg-green-100 border-green-200",
       iconColor: "text-green-600"
     },
     { 
       name: "Water Problem", 
-      icon: <Droplet className="w-5 h-5" />,
+      icon: null,
       color: "bg-blue-50 hover:bg-blue-100 border-blue-200",
       iconColor: "text-blue-600"
     },
     { 
       name: "Road Damage", 
-      icon: <MapPin className="w-5 h-5" />,
+      icon: null,
       color: "bg-red-50 hover:bg-red-100 border-red-200",
       iconColor: "text-red-600"
     },
     { 
       name: "Tree Cutting Request", 
-      icon: <TreeDeciduous className="w-5 h-5" />,
+      icon: null,
       color: "bg-emerald-50 hover:bg-emerald-100 border-emerald-200",
       iconColor: "text-emerald-600"
     },
     { 
       name: "Noise Complaint", 
-      icon: <AlertTriangle className="w-5 h-5" />,
+      icon: null,
       color: "bg-purple-50 hover:bg-purple-100 border-purple-200",
       iconColor: "text-purple-600"
     },
     { 
       name: "Community Issue", 
-      icon: <Users className="w-5 h-5" />,
+      icon: null,
       color: "bg-indigo-50 hover:bg-indigo-100 border-indigo-200",
       iconColor: "text-indigo-600"
     },

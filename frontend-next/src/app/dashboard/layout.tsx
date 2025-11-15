@@ -2,7 +2,7 @@
 'use client';
 import React, { useState } from 'react';
 import chatbotTriggerStyles from './ChatbotTrigger.module.css';
-import apiClient from '@/lib/api-client';
+import apiClient from '../../lib/api-client';
 // Simple Chatbot Modal Component
 function ChatbotModal({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState("");
@@ -59,7 +59,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
       {/* Only the chatbot window is interactive, no overlay */}
       <div className="absolute bottom-6 right-6 w-full max-w-md rounded-2xl shadow-2xl bg-white border border-gray-200 animate-fade-in-up pointer-events-auto overflow-hidden">
         {/* Header with gradient */}
-        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#003C88] to-[#0052b3] border-b border-blue-700">
+        <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-[#003C88] to-[#0052b3] border-b border-blue-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Chat Messages Area */}
-        <div ref={chatRef} className="p-5 h-96 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+        <div ref={chatRef} className="p-5 h-96 overflow-y-auto bg-linear-to-b from-gray-50 to-white">
           <div className="flex flex-col gap-4">
             {messages.map((msg, idx) => (
               <div
@@ -92,7 +92,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
                 className={msg.sender === "bot" ? "flex items-start gap-2" : "flex items-start gap-2 justify-end"}
               >
                 {msg.sender === "bot" && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-md">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
@@ -101,8 +101,8 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
                 <div
                   className={
                     msg.sender === "bot"
-                      ? "bg-gradient-to-br from-blue-50 to-blue-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm border border-blue-200"
-                      : "bg-gradient-to-br from-[#003C88] to-[#0052b3] text-white px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-md"
+                      ? "bg-linear-to-br from-blue-50 to-blue-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm border border-blue-200"
+                      : "bg-linear-to-br from-[#003C88] to-[#0052b3] text-white px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-md"
                   }
                 >
                   <div className={msg.sender === "bot" ? "text-sm leading-relaxed whitespace-pre-wrap font-medium" : "text-sm leading-relaxed whitespace-pre-wrap"}>
@@ -110,7 +110,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
                 {msg.sender === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center flex-shrink-0 shadow-md">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-gray-600 to-gray-700 flex items-center justify-center shrink-0 shadow-md">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -120,12 +120,12 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
             ))}
             {loading && (
               <div className="flex items-start gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-md">
                   <svg className="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-blue-200">
+                <div className="bg-linear-to-br from-blue-50 to-blue-100 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-blue-200">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
@@ -164,7 +164,7 @@ function ChatbotModal({ onClose }: { onClose: () => void }) {
             />
             <button
               type="submit"
-              className="bg-gradient-to-r from-[#003C88] to-[#0052b3] hover:from-[#002a66] hover:to-[#003c88] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
+              className="bg-linear-to-r from-[#003C88] to-[#0052b3] hover:from-[#002a66] hover:to-[#003c88] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
               title="Send"
               aria-label="Send"
               disabled={!input.trim() || loading}
@@ -191,15 +191,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import {
-  LayoutDashboard,
-  FileText,
-  PlusCircle,
-  User,
-  LogOut,
-  Menu,
-  X
-} from 'lucide-react';
+import { FileText, LogOut, Menu, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the 3D robot viewer to avoid SSR issues
