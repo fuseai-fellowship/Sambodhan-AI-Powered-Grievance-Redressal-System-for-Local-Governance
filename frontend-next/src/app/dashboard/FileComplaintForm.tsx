@@ -137,7 +137,7 @@ export default function FileComplaintForm() {
 
       console.log('Submitting payload:', payload);
     // 4. Send to backend
-    await apiClient.post('http://localhost:8000/api/complaints', payload)
+    await apiClient.post('/complaints', payload)
         .catch(err => {
           if (err?.response) {
             console.error('API error:', {

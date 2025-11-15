@@ -1,25 +1,35 @@
 {
   "compilerOptions": {
-    "target": "ES2020",                     // Modern JS target for better features
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,                        // Allows JS files alongside TS
-    "skipLibCheck": true,                   // Skip type checks in node_modules for faster builds
-    "strict": true,                         // Enable all strict type checking options
-    "strictNullChecks": true,               // Prevent null/undefined bugs
+    "target": "ES2020", // Modern JS target for better features
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true, // Allows JS files alongside TS
+    "skipLibCheck": true, // Skip type checks in node_modules for faster builds
+    "strict": true, // Enable all strict type checking options
+    "strictNullChecks": true, // Prevent null/undefined bugs
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,                         // Next.js handles emitting JS
+    "noEmit": true, // Next.js handles emitting JS
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": true,                // Required for Next.js
-    "jsx": "react-jsx",                      // React 17+ JSX transform
-    "incremental": true,                    // Speeds up repeated builds
-    "baseUrl": ".",                         // Base URL for path mapping
+    "isolatedModules": true, // Required for Next.js
+    "jsx": "react-jsx", // React 17+ JSX transform
+    "incremental": true, // Speeds up repeated builds
+    "baseUrl": ".", // Base URL for path mapping
     "paths": {
-      "@/*": ["src/*"]                      // Allows imports like import X from '@/components/X'
+      "@/*": [
+        "src/*"
+      ] // Allows imports like import X from '@/components/X'
     },
-    "plugins": [{ "name": "next" }]         // Next.js TS plugin
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ] // Next.js TS plugin
   },
   "include": [
     "next-env.d.ts",
@@ -27,7 +37,12 @@
     "**/*.tsx",
     "**/*.mts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
 }
