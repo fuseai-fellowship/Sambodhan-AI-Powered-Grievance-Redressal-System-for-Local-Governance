@@ -1,45 +1,106 @@
-# Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance
+<p align="center">
+  <img src="assets/fonts/logo.png" alt="Sambodhan Logo" height="80"/>
+</p>
 
+# Sambodhan: AI-Powered Grievance Redressal System for Local Governance
 
+<p align="center">
+  <b>Streamline citizen complaints, automate classification, and empower local governance with AI.</b><br>
+  <a href="https://github.com/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance/actions?query=workflow%3Aorchestrator.yml"><img src="https://img.shields.io/github/workflow/status/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance/orchestrator.yml?label=CI%2FCD" alt="CI/CD Status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance" alt="License"></a>
+</p>
 
 ## Overview
 
-Sambodhan is an AI-based system designed to streamline citizen grievance submission, classification, prioritization, and tracking for local governance. It supports multiple submission channels (mobile app, website) and provides real-time tracking, sentiment analysis, and departmental routing.
+Sambodhan is a full-stack AI-powered platform for citizen grievance management in local governance. It enables multi-channel complaint submission, automated classification (department & urgency), real-time analytics, and continuous model improvement. Built with Next.js (frontend), FastAPI (backend), and state-of-the-art NLP models, Sambodhan is designed for scalability, transparency, and actionable insights.
 
 ---
 
-### Table of contents
+---
+
+### Table of Contents
 
 - [Features](#features)
+- [Quickstart](#quickstart)
 - [Repository Structure](#repository-structure)
 - [Grievance Dataset Schema](#grievance-dataset-schema)
 - [Model Overview](#model-overview)
   - [System Architecture](#system-architecture)
-  - [1. Department Classification Model](#1-department-classification-model)
-    - [Resources](#resources)
-    - [Quick Start](#quick-start)
-    - [Model Evaluation](#model-evaluation)
-  - [2. Urgency Classification Model](#2-urgency-classification-model)
-    - [Resources](#resources-1)
-    - [Quick Start](#quick-start-1)
-    - [Model Evaluation](#model-evaluation-1)
-- [Continuous Learning Systemfor Sambodhan AI](#continuous-learning-systemfor-sambodhan-ai)
-  - [Workflow](#workflow)
-  - [1. Dataset Preparation Pipeline](#1-dataset-preparation-pipeline)
-  - [2. Model Retraining Pipeline](#2-model-retraining-pipeline)
-  - [3. Orchestrator: Continuous Learning CI/CD](#3-orchestrator-continuous-learning-cicd)
-<!-- - [Appendices / Resources](#appendices--resources)
-  - [Docs folder references](#docs-folder-references)
-  - [API / Swagger links](#api--swagger-links) -->
-
+  - [Department Classification Model](#1-department-classification-model)
+  - [Urgency Classification Model](#2-urgency-classification-model)
+- [Continuous Learning System](#continuous-learning-systemfor-sambodhan-ai)
+- [Frontend Features](#frontend-features)
+- [Backend Features](#backend-features)
+- [Analytics & Admin Dashboard](#analytics--admin-dashboard)
+- [API Client Usage](#api-client-usage)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
 ## Features
-- Multi-channel grievance submission ( app, website)
-- Automated grievance classification and departmental routing
+
+- Multi-channel grievance submission (web, mobile)
+- Automated department classification (AI/NLP)
 - Urgency and sentiment detection
-- Admin dashboard for analytics and grievance tracking
+- Real-time analytics dashboard (citizen & admin views)
+- Admin dashboard for grievance tracking and management
+- Secure authentication (JWT, context-based)
+- RESTful API (FastAPI)
+- Continuous learning: automated retraining & dataset prep
+- Dockerized deployment (frontend, backend, orchestrator)
+- CI/CD with GitHub Actions
+- Modular codebase: Next.js, FastAPI, Hugging Face, PyTorch
+
+---
+
+## Quickstart
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- Docker (optional, for containerized deployment)
+
+### Local Development
+
+#### 1. Clone the repository
+
+```bash
+git clone https://github.com/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance.git
+cd Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance
+```
+
+#### 2. Setup Python backend
+
+```bash
+python -m venv env
+source env/bin/activate  # or .\env\Scripts\activate on Windows
+pip install -r requirements.txt
+cd src/backend/app
+uvicorn main:app --reload
+```
+
+#### 3. Setup Next.js frontend
+
+```bash
+cd frontend-next
+npm install
+npm run dev
+```
+
+#### 4. Docker Compose (all services)
+
+```bash
+docker-compose up --build
+```
+
+#### 5. Environment Variables
+
+- Copy `.env.example` to `.env` in both `frontend-next` and backend folders, and fill in required values (see docs).
+
+---
 
 ---
 
@@ -85,7 +146,7 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 │   └── services/             # Standalone classifier microservices
 │       ├── department_classifier_api/  # Department classification API
 │       ├── prepare_dataset # prepare dataset pipeline
-│       ├── retrain_model # retrain model pipeline 
+│       ├── retrain_model # retrain model pipeline
 │       └── urgency_classifier_api/     # Urgency classification API
 ├── tests/                    # Automated tests
 │   ├── backend/              # Backend tests
@@ -102,17 +163,18 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 ```
 
-## Grievance Dataset Schema:
+## Grievance Dataset Schema
 
-| Column Name   | Data Type      | Description                                                                                             | Example / Allowed Values                                                                                                 |
-| ------------- | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **id**        | Integer/String | Unique identifier for each grievance record.                                                            | 1001                                                                                                                     |
-| **grievance** | String         | Text of the citizen grievance describing the issue.                                                     | "Street lights not working in Ward 5."                                                                                   |
+| Column Name   | Data Type      | Description                                                                                             | Example / Allowed Values                                                                                                                                                                   |
+| ------------- | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **id**        | Integer/String | Unique identifier for each grievance record.                                                            | 1001                                                                                                                                                                                       |
+| **grievance** | String         | Text of the citizen grievance describing the issue.                                                     | "Street lights not working in Ward 5."                                                                                                                                                     |
 | **dept**      | String         | The department or super-department responsible for addressing the grievance.                            | Allowed values:<br>- Municipal Governance & Community Services<br>- Education, Health & Social Welfare <br>- Infrastructure, Utilities & Natural Resources<br>- Security & Law Enforcement |
-| **urgency**   | String         | The urgency category of the grievance, based on predefined labels: `normal`, `urgent`, `highly urgent`. | "urgent"                                                                                                                 |
+| **urgency**   | String         | The urgency category of the grievance, based on predefined labels: `normal`, `urgent`, `highly urgent`. | "urgent"                                                                                                                                                                                   |
 
 > Detail Dataset Report: [Grievance Dataset Schema](docs/grievance_dataset_schema.md)
 
+---
 
 ---
 
@@ -120,11 +182,13 @@ Sambodhan is an AI-based system designed to streamline citizen grievance submiss
 
 ### System Architecture
 
-* **Model Type:** Transformer-based text classification `xlm-roberta-base`
-* **Framework:** Hugging Face Transformers + PyTorch
-* **API Framework:** FastAPI with Pydantic validation
-* **Deployment:** Dockerized services on Hugging Face Spaces
-* **Core Features:** Batch inference, confidence scoring, automated text preprocessing
+- **Frontend:** Next.js (React, TypeScript)
+- **Backend:** FastAPI (Python, RESTful API)
+- **ML Models:** Transformer-based text classification (`xlm-roberta-base`)
+- **Frameworks:** Hugging Face Transformers, PyTorch
+- **Deployment:** Docker, Hugging Face Spaces, GitHub Actions
+- **Database:** PostgreSQL (for feedback, analytics, retraining)
+- **Core Features:** Batch inference, confidence scoring, automated text preprocessing
 
 ---
 
@@ -149,6 +213,7 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 ```
 
 <<<<<<< HEAD
+
 #### Model Evaluation
 
 **Classification Report**
@@ -159,6 +224,7 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 ---
 
+---
 
 ### 2. Urgency Classification Model
 
@@ -182,7 +248,6 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
 
 ### Model Performance
 
-
 **Classification Report**
 ![Classification Report](./results/urgency_classifier/classification_report.png)
 
@@ -191,12 +256,15 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
 
 ---
 
-## Continuous Learning Systemfor Sambodhan AI
+---
 
-Sambodhan’s **Continuous Learning System** orchestrates automated dataset preparation and model retraining, ensuring  its **Urgency** and **Department** classification models continuously learn from real-world feedback with minimal manual intervention.
+## Continuous Learning System for Sambodhan AI
+
+Sambodhan’s **Continuous Learning System** orchestrates automated dataset preparation and model retraining, ensuring its **Urgency** and **Department** classification models continuously learn from real-world feedback with minimal manual intervention.
 
 This system consists of three core components:
-1. **Dataset Preparation Pipeline** 
+
+1. **Dataset Preparation Pipeline**
 2. **Model Retraining Pipeline**
 3. **Orchestrator: Continuous Learning CI/CD**
 
@@ -214,7 +282,11 @@ graph LR
     D -->|Collect Feedback| E[PostgreSQL DB]
     E -->|Fetch Misclassified</br>Trigger| A
 ```
+
 > Fig: Continuous Learning Workflow
+
+---
+
 ---
 
 ### 1. Dataset Preparation Pipeline
@@ -223,22 +295,22 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 
 #### Key Highlights
 
-* **Event-driven execution** – triggered whenever the **Prepare Dataset Space** restarts (manual or API).
-* **Database integration** – fetches **misclassified grievances** and balances them with correctly predicted samples.
-* **Data preprocessing** – handles cleaning, encoding, and dataset splitting.
-* **Version control** – pushes versioned datasets to the **Hugging Face Dataset Hub** with timestamped tags.
-* **Experiment tracking** – logs dataset statistics and push status in **W&B**.
-* **Resource-efficient** – the Space auto-pauses after completion to conserve compute.
-* **Notify User** - Send Run Summary Email to Admin
+- **Event-driven execution** – triggered whenever the **Prepare Dataset Space** restarts (manual or API).
+- **Database integration** – fetches **misclassified grievances** and balances them with correctly predicted samples.
+- **Data preprocessing** – handles cleaning, encoding, and dataset splitting.
+- **Version control** – pushes versioned datasets to the **Hugging Face Dataset Hub** with timestamped tags.
+- **Experiment tracking** – logs dataset statistics and push status in **W&B**.
+- **Resource-efficient** – the Space auto-pauses after completion to conserve compute.
+- **Notify User** - Send Run Summary Email to Admin
 
 #### Components
 
-| Component                 | Role                                        |
-| ------------------------- | ------------------------------------------- |
-| **Prepare Dataset Space** | Automates data collection and preprocessing |
-| **PostgreSQL Database**   | Stores grievances and feedback samples      |
-| **HF Dataset Hub**        | Hosts version-controlled training datasets  |
-| **Weights & Biases**      | Logs dataset updates and metadata, Notify Admin          |
+| Component                 | Role                                            |
+| ------------------------- | ----------------------------------------------- |
+| **Prepare Dataset Space** | Automates data collection and preprocessing     |
+| **PostgreSQL Database**   | Stores grievances and feedback samples          |
+| **HF Dataset Hub**        | Hosts version-controlled training datasets      |
+| **Weights & Biases**      | Logs dataset updates and metadata, Notify Admin |
 
 #### Workflow
 
@@ -253,10 +325,13 @@ graph LR
     F --> H
 
 ```
+
 > Fig: Dataset Preparation Pipeline
 
 **Detailed Guide:** See **[→ docs/prepare_dataset.md ](docs/prepare_dataset.md)**
- for setup, configuration, and deployment instructions.
+for setup, configuration, and deployment instructions.
+
+---
 
 ---
 
@@ -266,22 +341,22 @@ The **Retraining Pipeline** ensures Sambodhan’s models continuously improve ba
 
 #### Key Highlights
 
-* **Automated execution** – runs whenever the **Retrain Space** restarts (manual or API).
-* **End-to-end training** – loads the latest dataset, trains using **Focal Loss**, evaluates, and compares results.
-* **Performance-based deployment** – deploys a new model **only if** it outperforms the current one (by F1-macro).
-* **Containerized runtime** – uses **Dockerized Hugging Face Spaces** that automatically pause after training.
-* **Full traceability** – logs metrics, confusion matrices, and deployment decisions to **W&B**.
-* **Notify User** - Send Run Summary Email to Admin
+- **Automated execution** – runs whenever the **Retrain Space** restarts (manual or API).
+- **End-to-end training** – loads the latest dataset, trains using **Focal Loss**, evaluates, and compares results.
+- **Performance-based deployment** – deploys a new model **only if** it outperforms the current one (by F1-macro).
+- **Containerized runtime** – uses **Dockerized Hugging Face Spaces** that automatically pause after training.
+- **Full traceability** – logs metrics, confusion matrices, and deployment decisions to **W&B**.
+- **Notify User** - Send Run Summary Email to Admin
 
 #### Components
 
-| Component            | Role                                         |
-| -------------------- | -------------------------------------------- |
-| **Inference Space**  | Hosts and serves the production model        |
-| **Retrain Space**    | Handles training and evaluation runs         |
-| **Dataset Hub**      | Stores version-controlled training data      |
-| **Model Hub**        | Publishes retrained model versions           |
-| **Weights & Biases** | Tracks experiments,Notify Admin,  results, and comparisons |
+| Component            | Role                                                      |
+| -------------------- | --------------------------------------------------------- |
+| **Inference Space**  | Hosts and serves the production model                     |
+| **Retrain Space**    | Handles training and evaluation runs                      |
+| **Dataset Hub**      | Stores version-controlled training data                   |
+| **Model Hub**        | Publishes retrained model versions                        |
+| **Weights & Biases** | Tracks experiments,Notify Admin, results, and comparisons |
 
 #### Workflow
 
@@ -299,22 +374,116 @@ graph LR
 
 > Fig: Model Retraining Pipeline
 
-**Detailed Guide:** 
+**Detailed Guide:**
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/retraining_classifier.md ](docs/retraining_classifier.md)**
+
+---
 
 ---
 
 ### 3. Orchestrator: Continuous Learning CI/CD
 
+---
+
+## Frontend Features
+
+- Built with Next.js (React, TypeScript)
+- Citizen dashboard: submit grievances, view status, analytics
+- Admin dashboard: manage grievances, view metrics, department/urgency insights
+- Authentication: login, protected routes, context-based auth
+- Data visualizations: charts for response time, location hotspots, quality metrics
+- Modular UI components for forms, tables, charts
+- API client for backend communication (Axios)
+
+---
+
+## Backend Features
+
+- FastAPI RESTful API
+- Modular routers: complaints, location, orchestrator, etc.
+- Environment variable loading via `.env` (secure config)
+- Department and urgency classification endpoints
+- Database integration (PostgreSQL)
+- Automated feedback loop for continuous learning
+- Dockerized for scalable deployment
+
+---
+
+## Analytics & Admin Dashboard
+
+- Real-time metrics: grievance volume, response time, department/urgency distribution
+- Location-based insights: hotspot mapping
+- Quality metrics: resolution rates, feedback analysis
+- Admin tools: manage, assign, and track grievances
+- Data export and reporting
+
+---
+
+## API Client Usage
+
+The frontend uses a reusable API client (`src/lib/api-client.ts`) for all backend communication. Example usage:
+
+```typescript
+import apiClient from "../lib/api-client";
+
+// Submit a grievance
+apiClient
+  .post("/complaints", { ...data })
+  .then((response) => {
+    /* handle success */
+  })
+  .catch((error) => {
+    /* handle error */
+  });
+```
+
+---
+
+## Testing
+
+- Backend: Pytest-based tests in `tests/backend`
+- Frontend: Jest/React Testing Library in `tests/frontend`
+- ML pipelines: notebook-based and script-based tests in `tests/data_science`
+
+Run backend tests:
+
+```bash
+pytest tests/backend
+```
+
+Run frontend tests:
+
+```bash
+cd frontend-next
+npm test
+```
+
+---
+
+## Contributing
+
+We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
+
+1. Fork the repo and create your branch.
+2. Make changes with clear commit messages.
+3. Ensure all tests pass.
+4. Submit a pull request with a detailed description.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
+
 The **Orchestrator** coordinates dataset preparation and model retraining using **GitHub Actions**.
 
 #### Key Highlights
 
-* **Threshold-based execution** – only triggers dataset preparation if misclassified counts exceed configured thresholds.
-* **Version-aware retraining** – waits for new datasets to appear on **HF Hub** before retraining.
-* **Independent label handling** – handles **department** and **urgency** pipelines separately.
-* **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
-* **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
+- **Threshold-based execution** – only triggers dataset preparation if misclassified counts exceed configured thresholds.
+- **Version-aware retraining** – waits for new datasets to appear on **HF Hub** before retraining.
+- **Independent label handling** – handles **department** and **urgency** pipelines separately.
+- **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
+- **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
 
 #### Workflow
 
@@ -334,11 +503,7 @@ graph LR
 
 > Fig: Continuous Learning Orchestration Pipeline
 
-
-**Detailed Guide:** 
+**Detailed Guide:**
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/orchestrator.md ](docs/orchestrator.md)**
 
 ---
-
-
-
