@@ -1,20 +1,17 @@
 <p align="center">
-  <img src="assets/fonts/logo.png" alt="Sambodhan Logo" height="80"/>
+  <img width="200" height="150" src="https://github.com/user-attachments/assets/d09bce75-6ed4-4f7e-ab52-419212e3920e" alt="Sambodhan Logo" height="80"/>
 </p>
+
 
 # Sambodhan: AI-Powered Grievance Redressal System for Local Governance
 
 <p align="center">
   <b>Streamline citizen complaints, automate classification, and empower local governance with AI.</b><br>
-  <a href="https://github.com/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance/actions?query=workflow%3Aorchestrator.yml"><img src="https://img.shields.io/github/workflow/status/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance/orchestrator.yml?label=CI%2FCD" alt="CI/CD Status"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance" alt="License"></a>
 </p>
 
 ## Overview
 
 Sambodhan is a full-stack AI-powered platform for citizen grievance management in local governance. It enables multi-channel complaint submission, automated classification (department & urgency), real-time analytics, and continuous model improvement. Built with Next.js (frontend), FastAPI (backend), and state-of-the-art NLP models, Sambodhan is designed for scalability, transparency, and actionable insights.
-
----
 
 ---
 
@@ -28,14 +25,14 @@ Sambodhan is a full-stack AI-powered platform for citizen grievance management i
   - [System Architecture](#system-architecture)
   - [Department Classification Model](#1-department-classification-model)
   - [Urgency Classification Model](#2-urgency-classification-model)
-- [Continuous Learning System](#continuous-learning-systemfor-sambodhan-ai)
+- [Continuous Learning System for Sambodhan AI](#continuous-learning-system-for-sambodhan-ai)
 - [Frontend Features](#frontend-features)
 - [Backend Features](#backend-features)
 - [Analytics & Admin Dashboard](#analytics--admin-dashboard)
+- [Chatbot System](#chatbot-system)
 - [API Client Usage](#api-client-usage)
 - [Testing](#testing)
 - [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -99,8 +96,6 @@ docker-compose up --build
 #### 5. Environment Variables
 
 - Copy `.env.example` to `.env` in both `frontend-next` and backend folders, and fill in required values (see docs).
-
----
 
 ---
 
@@ -176,8 +171,6 @@ docker-compose up --build
 
 ---
 
----
-
 ## Model Overview
 
 ### System Architecture
@@ -212,8 +205,6 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
   -d '{"text": "Where can I get a new water connection?"}'
 ```
 
-<<<<<<< HEAD
-
 #### Model Evaluation
 
 **Classification Report**
@@ -221,8 +212,6 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
 
 **Confusion Matrix**
 ![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
-
----
 
 ---
 
@@ -254,7 +243,6 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
 **Confusion Matrix**
 ![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
 
----
 
 ---
 
@@ -285,7 +273,6 @@ graph LR
 
 > Fig: Continuous Learning Workflow
 
----
 
 ---
 
@@ -333,8 +320,6 @@ for setup, configuration, and deployment instructions.
 
 ---
 
----
-
 ### 2. Model Retraining Pipeline
 
 The **Retraining Pipeline** ensures Sambodhan’s models continuously improve based on the latest prepared datasets.
@@ -379,9 +364,38 @@ For complete setup instructions, environment configuration, and architecture dia
 
 ---
 
----
-
 ### 3. Orchestrator: Continuous Learning CI/CD
+
+The **Orchestrator** coordinates dataset preparation and model retraining using **GitHub Actions**.
+
+#### Key Highlights
+
+- **Threshold-based execution** – only triggers dataset preparation if misclassified counts exceed configured thresholds.
+- **Version-aware retraining** – waits for new datasets to appear on **HF Hub** before retraining.
+- **Independent label handling** – handles **department** and **urgency** pipelines separately.
+- **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
+- **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
+
+#### Workflow
+
+```mermaid
+graph LR
+    Start["START<br/>Orchestrator triggered (manual or scheduled)"] --> DBConnect["Connect to DB<br/>Fetch misclassified counts"]
+    DBConnect --> ComputeLen["Compute dataset_len per label"]
+    ComputeLen --> CheckThreshold{"dataset_len >= threshold?"}
+    CheckThreshold -->|Yes| TriggerPrep["Restart Dataset Prep Space<br/>for labels above threshold"]
+    CheckThreshold -->|No| SkipLabel["Skip label<br/>Log info"] --> CheckThreshold
+    TriggerPrep --> PollDataset["Poll HF Hub metadata<br/>Wait for new dataset version"]
+    PollDataset -->|Success| RestartRetrain["Restart retrain HF Space<br/>for updated labels"]
+    PollDataset -->|Error / Timeout| PollError["Polling error / timeout<br/>Log warning / retry / abort"]
+    RestartRetrain --> End["END<br/>Orchestration complete"]
+    PollError --> End
+```
+
+> Fig: Continuous Learning Orchestration Pipeline
+
+**Detailed Guide:**
+For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/orchestrator.md ](docs/orchestrator.md)**
 
 ---
 
@@ -394,6 +408,7 @@ For complete setup instructions, environment configuration, and architecture dia
 - Data visualizations: charts for response time, location hotspots, quality metrics
 - Modular UI components for forms, tables, charts
 - API client for backend communication (Axios)
+- **Integrated Chatbot for citizen support and FAQ**
 
 ---
 
@@ -406,6 +421,7 @@ For complete setup instructions, environment configuration, and architecture dia
 - Database integration (PostgreSQL)
 - Automated feedback loop for continuous learning
 - Dockerized for scalable deployment
+- **Chatbot endpoint for conversational support**
 
 ---
 
@@ -416,6 +432,20 @@ For complete setup instructions, environment configuration, and architecture dia
 - Quality metrics: resolution rates, feedback analysis
 - Admin tools: manage, assign, and track grievances
 - Data export and reporting
+
+---
+
+## Chatbot System
+
+Sambodhan includes an AI-powered chatbot to assist citizens in submitting grievances, answering FAQs, and providing guidance.
+
+### Features
+
+- Natural language understanding for English language
+- FAQ and helpdesk support
+- Grievance submission via chat
+- Department and urgency prediction via chat
+- Integrated with backend ML models
 
 ---
 
@@ -468,42 +498,5 @@ We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for gu
 2. Make changes with clear commit messages.
 3. Ensure all tests pass.
 4. Submit a pull request with a detailed description.
-
----
-
-## License
-
-This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
-
-The **Orchestrator** coordinates dataset preparation and model retraining using **GitHub Actions**.
-
-#### Key Highlights
-
-- **Threshold-based execution** – only triggers dataset preparation if misclassified counts exceed configured thresholds.
-- **Version-aware retraining** – waits for new datasets to appear on **HF Hub** before retraining.
-- **Independent label handling** – handles **department** and **urgency** pipelines separately.
-- **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
-- **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
-
-#### Workflow
-
-```mermaid
-graph LR
-    Start["START<br/>Orchestrator triggered (manual or scheduled)"] --> DBConnect["Connect to DB<br/>Fetch misclassified counts"]
-    DBConnect --> ComputeLen["Compute dataset_len per label"]
-    ComputeLen --> CheckThreshold{"dataset_len >= threshold?"}
-    CheckThreshold -->|Yes| TriggerPrep["Restart Dataset Prep Space<br/>for labels above threshold"]
-    CheckThreshold -->|No| SkipLabel["Skip label<br/>Log info"] --> CheckThreshold
-    TriggerPrep --> PollDataset["Poll HF Hub metadata<br/>Wait for new dataset version"]
-    PollDataset -->|Success| RestartRetrain["Restart retrain HF Space<br/>for updated labels"]
-    PollDataset -->|Error / Timeout| PollError["Polling error / timeout<br/>Log warning / retry / abort"]
-    RestartRetrain --> End["END<br/>Orchestration complete"]
-    PollError --> End
-```
-
-> Fig: Continuous Learning Orchestration Pipeline
-
-**Detailed Guide:**
-For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/orchestrator.md ](docs/orchestrator.md)**
 
 ---
