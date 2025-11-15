@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import SummaryCards from "../components/dashboard/SummaryCards";
@@ -28,7 +28,7 @@ const TABS = [
   { name: "My Cases", icon: CheckCircle },
 ];
 
-export default function AdminDashboard() {
+function AdminDashboardInner() {
   const [activeTab, setActiveTab] = useState(0);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -829,118 +829,50 @@ export default function AdminDashboard() {
   );
 }
 
+// Page-level wrapper adding Suspense boundary required for useSearchParams()
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={<div className="p-6 text-gray-600">Loading dashboard...</div>}>
+      <AdminDashboardInner />
+    </Suspense>
+  );
+}
+
 // Retrain Models Section Component
 function RetrainModelsSection() {
-  const [loading, setLoading] = useState({
-    department: false,
-    urgency: false,
-    dataset: false
-  });
-  const [results, setResults] = useState({
-    department: null,
-    urgency: null,
-    dataset: null
-  });
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0); // 0: idle, 1: dataset, 2: department, 3: urgency, 4: done
+  const [result, setResult] = useState(null);
 
-  const handleRetrain = async (modelType) => {
-    setLoading(prev => ({ ...prev, [modelType]: true }));
-    setResults(prev => ({ ...prev, [modelType]: null }));
-
+  const handleRetrainAll = async () => {
+    setLoading(true);
+    setResult(null);
     try {
-      const response = await axios.post(`/api/retrain/${modelType}`);
-      setResults(prev => ({ 
-        ...prev, 
-        [modelType]: { 
-          success: true, 
-          message: response.data?.message || 'Retraining initiated successfully!',
-          data: response.data
-        } 
-      }));
+      const response = await axios.post('/api/orchestrator/trigger');
+      setResult({
+        success: true,
+        message: response.data?.message || 'Workflow started. You may continue other work.',
+      });
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to initiate retraining.';
-      
-      // Check if it's a configuration error
-      const isConfigError = errorMessage.includes('not configured') || 
-                           errorMessage.includes('environment variable') ||
-                           errorMessage.includes('.env');
-      
-      setResults(prev => ({ 
-        ...prev, 
-        [modelType]: { 
-          success: false, 
-          message: errorMessage,
-          isConfigError: isConfigError
-        } 
-      }));
+      setResult({
+        success: false,
+        message: error.response?.data?.detail || error.message || 'Failed to start workflow.',
+      });
     } finally {
-      setLoading(prev => ({ ...prev, [modelType]: false }));
+      setLoading(false);
     }
-  };
-
-  const models = [
-    {
-      key: 'department',
-      title: 'Department Classifier',
-      description: 'Retrain the model that classifies grievances into different department categories',
-      icon: FolderKanban,
-      color: 'blue'
-    },
-    {
-      key: 'urgency',
-      title: 'Urgency Classifier',
-      description: 'Retrain the model that determines urgency levels (Normal, Urgent, Highly Urgent)',
-      icon: Zap,
-      color: 'orange'
-    },
-    {
-      key: 'dataset',
-      title: 'Prepare Dataset',
-      description: 'Restart the dataset preparation space for updated training data',
-      icon: Database,
-      color: 'green'
-    }
-  ];
-
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: {
-        border: 'border-blue-200',
-        bg: 'bg-blue-50',
-        text: 'text-blue-700',
-        button: 'bg-blue-600 hover:bg-blue-700',
-        success: 'bg-blue-100 border-blue-300 text-blue-800',
-        error: 'bg-red-100 border-red-300 text-red-800'
-      },
-      orange: {
-        border: 'border-orange-200',
-        bg: 'bg-orange-50',
-        text: 'text-orange-700',
-        button: 'bg-orange-600 hover:bg-orange-700',
-        success: 'bg-orange-100 border-orange-300 text-orange-800',
-        error: 'bg-red-100 border-red-300 text-red-800'
-      },
-      green: {
-        border: 'border-green-200',
-        bg: 'bg-green-50',
-        text: 'text-green-700',
-        button: 'bg-green-600 hover:bg-green-700',
-        success: 'bg-green-100 border-green-300 text-green-800',
-        error: 'bg-red-100 border-red-300 text-red-800'
-      }
-    };
-    return colors[color] || colors.blue;
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#003C88] to-[#0052b3] text-white rounded-xl shadow-lg p-6">
+      <div className="bg-linear-to-r from-[#003C88] to-[#0052b3] text-white rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-2">
           <RefreshCw className="w-8 h-8" />
           <h2 className="text-2xl font-bold">Model Retraining Center</h2>
         </div>
         <p className="text-blue-100">
-          Retrain AI models with updated data to improve classification accuracy for misclassified grievances
+          Retrain all models with updated data to improve classification accuracy for misclassified grievances
         </p>
       </div>
 
@@ -960,90 +892,35 @@ function RetrainModelsSection() {
         </div>
       </div>
 
-      {/* Model Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {models.map(model => {
-          const colors = getColorClasses(model.color);
-          const result = results[model.key];
-          const isLoading = loading[model.key];
-
-          return (
-            <div key={model.key} className={`bg-white rounded-xl shadow-md border-2 ${colors.border} overflow-hidden transition-all hover:shadow-lg`}>
-              {/* Card Header */}
-              <div className={`${colors.bg} p-4 border-b ${colors.border}`}>
-                <div className="flex items-center gap-3 mb-2">
-                  <model.icon className={`w-8 h-8 ${colors.text}`} />
-                  <h3 className={`font-bold text-lg ${colors.text}`}>{model.title}</h3>
-                </div>
-                <p className="text-sm text-gray-600">{model.description}</p>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-4">
-                {/* Result Message */}
-                {result && (
-                  <div className={`mb-4 p-3 rounded-lg border ${result.success ? colors.success : colors.error}`}>
-                    <p className="text-sm font-medium mb-1">{result.message}</p>
-                    
-                    {/* Configuration Error Help */}
-                    {result.isConfigError && (
-                      <div className="mt-2 pt-2 border-t border-red-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <AlertCircle className="w-3 h-3 text-red-700" />
-                          <p className="text-xs font-semibold">Setup Required:</p>
-                        </div>
-                        <ol className="text-xs space-y-1 list-decimal list-inside">
-                          <li>Create <code className="bg-red-200 px-1 rounded">.env</code> file in <code className="bg-red-200 px-1 rounded">src/backend/</code></li>
-                          <li>Copy from <code className="bg-red-200 px-1 rounded">.env.example</code></li>
-                          <li>Add your Hugging Face token and Space IDs</li>
-                          <li>Restart the backend server</li>
-                        </ol>
-                      </div>
-                    )}
-                    
-                    {/* Success with Space URL */}
-                    {result.success && result.data?.space_url && (
-                      <a 
-                        href={result.data.space_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs underline mt-1 block hover:opacity-80"
-                      >
-                        View Training Space →
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {/* Action Button */}
-                <button
-                  onClick={() => handleRetrain(model.key)}
-                  disabled={isLoading}
-                  className={`w-full ${colors.button} text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Initiating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4" />
-                      Start Retraining
-                    </>
-                  )}
-                </button>
-
-                {/* Technical Details */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 font-mono">
-                    POST /api/retrain/{model.key}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* Single Retrain Button and Progress */}
+      <div className="bg-white rounded-xl shadow-md border-2 border-blue-200 overflow-hidden transition-all p-6 flex flex-col items-center">
+        <button
+          onClick={handleRetrainAll}
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Starting Workflow...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              Trigger Orchestrator Workflow
+            </>
+          )}
+        </button>
+        {result && (
+          <div className={`mb-4 p-3 rounded-lg border ${result.success ? 'bg-blue-100 border-blue-300 text-blue-800' : 'bg-red-100 border-red-300 text-red-800'}`}>
+            <p className="text-sm font-medium mb-1">{result.message}</p>
+          </div>
+        )}
+        <div className="mt-4 pt-4 border-t border-gray-200 w-full">
+          <p className="text-xs text-gray-500 font-mono">
+            POST /api/orchestrator/trigger
+          </p>
+        </div>
       </div>
 
       {/* Additional Info */}
@@ -1054,28 +931,28 @@ function RetrainModelsSection() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="flex items-start gap-3">
-            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">1</div>
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">1</div>
             <div>
               <h4 className="font-semibold text-sm text-gray-800">Review & Correct</h4>
               <p className="text-xs text-gray-600">Use Classification Review tab to fix misclassified data</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">2</div>
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">2</div>
             <div>
               <h4 className="font-semibold text-sm text-gray-800">Prepare Dataset</h4>
-              <p className="text-xs text-gray-600">Click "Prepare Dataset" to update training data</p>
+              <p className="text-xs text-gray-600">Click "Retrain All Models" to update training data</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">3</div>
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">3</div>
             <div>
               <h4 className="font-semibold text-sm text-gray-800">Retrain Models</h4>
-              <p className="text-xs text-gray-600">Start retraining for Department and/or Urgency classifiers</p>
+              <p className="text-xs text-gray-600">Department and Urgency classifiers retrained</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold flex-shrink-0">4</div>
+            <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">4</div>
             <div>
               <h4 className="font-semibold text-sm text-gray-800">Auto-Deploy</h4>
               <p className="text-xs text-gray-600">Updated models are automatically deployed when ready</p>
