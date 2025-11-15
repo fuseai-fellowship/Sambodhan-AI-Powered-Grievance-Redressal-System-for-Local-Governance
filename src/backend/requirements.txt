@@ -1,4 +1,5 @@
 gunicorn
+argon2_cffi
 psycopg2-binary
 alembic==1.16.5
 annotated-types==0.7.0
