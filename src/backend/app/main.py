@@ -1,13 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routers import complaints, user, location, admin
 from app import chatbot_api
 from app.routers.analytics import router as analytics_router
 from app.routers.misclassification import router as misclassification_router
-from app.routers import retrain_spaces
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.routers import retrain_spaces, trigger_orchestrator
 
 app = FastAPI(title="Sambodhan API")
 
@@ -29,6 +27,7 @@ app.include_router(chatbot_api.router)
 app.include_router(analytics_router)
 app.include_router(misclassification_router)
 app.include_router(retrain_spaces.router)
+app.include_router(trigger_orchestrator.router)
 
 @app.get("/")
 def root():
