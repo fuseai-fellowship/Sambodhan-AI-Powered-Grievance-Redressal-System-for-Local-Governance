@@ -4,6 +4,15 @@
 
 
 # Sambodhan: AI-Powered Grievance Redressal System for Local Governance
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![FastAPI: 0.116.1](https://img.shields.io/badge/FastAPI-0.116.1-blue.svg)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg)](https://www.python.org/)
+[![Next.js: 14](https://img.shields.io/badge/Next.js-14-000000.svg)](https://nextjs.org/)
+[![TypeScript: 5.2](https://img.shields.io/badge/TypeScript-5.2-007ACC.svg)](https://www.typescriptlang.org/)
+[![PostgreSQL: 15](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
+[![Docker: 24.0](https://img.shields.io/badge/Docker-24.0-2496ED.svg)](https://www.docker.com/)
+[![Transformers: XLM-RoBERTa-Base](https://img.shields.io/badge/Transformers-XLM--RoBERTa--Base-ffcc00.svg)](https://huggingface.co/xlm-roberta-base)
+[![Groq LLM: Llama-3.3-70B](https://img.shields.io/badge/Groq%20LLM-Llama--3.3--70B-ff6f00.svg)](https://groq.com/)
 
 <p align="center">
   <b>Streamline citizen complaints, automate classification, and empower local governance with AI.</b><br>
@@ -18,7 +27,8 @@ Sambodhan is a full-stack AI-powered platform for citizen grievance management i
 ### Table of Contents
 
 - [Features](#features)
-- [Quickstart](#quickstart)
+- [System Architecture](#system-architecture)
+- [Quickstart](#quick-start)
 - [Repository Structure](#repository-structure)
 - [Grievance Dataset Schema](#grievance-dataset-schema)
 - [Model Overview](#model-overview)
@@ -38,64 +48,213 @@ Sambodhan is a full-stack AI-powered platform for citizen grievance management i
 
 ## Features
 
-- Multi-channel grievance submission (web, mobile)
-- Automated department classification (AI/NLP)
-- Urgency and sentiment detection
-- Real-time analytics dashboard (citizen & admin views)
-- Admin dashboard for grievance tracking and management
-- Secure authentication (JWT, context-based)
-- RESTful API (FastAPI)
-- Continuous learning: automated retraining & dataset prep
-- Dockerized deployment (frontend, backend, orchestrator)
-- CI/CD with GitHub Actions
-- Modular codebase: Next.js, FastAPI, Hugging Face, PyTorch
+- 🌐 **Multi-channel Grievance Submission:** Web & mobile support for easy complaint filing.
+- 🤖 **AI-Powered Department Classification:** Automated routing using advanced NLP models.
+- ⚡ **Urgency & Sentiment Detection:** Instantly assess complaint priority and tone.
+- 💬 **Integrated AI Chatbot:** Conversational support for citizens, FAQs, and guided grievance submission.
+- 📊 **Real-Time Analytics Dashboard:** Interactive insights for citizens & admins.
+- 🛠️ **Admin Dashboard:** Track, manage, and resolve grievances efficiently.
+- 🔒 **Secure Authentication:** JWT-based, context-aware user access.
+- 🧩 **RESTful API:** Robust FastAPI backend for seamless integration.
+- 🔄 **Continuous Learning:** Automated retraining & dataset preparation for smarter models.
+- 🐳 **Dockerized Deployment:** Effortless setup for frontend, backend, and orchestrator.
+- 🔁 **CI/CD Automation:** Streamlined workflows with GitHub Actions.
+- 🧱 **Modular Codebase:** Built with Next.js, FastAPI, Hugging Face, PyTorch for scalability.
+---
+
+## System Architecture
+
+```mermaid
+flowchart LR
+
+%% ============================
+%% USERS
+%% ============================
+Citizen["👤 Citizen User"]
+Admin["🛂 Admin User"]
+
+%% ============================
+%% FRONTEND
+%% ============================
+subgraph WebApp["🌐 Frontend (Next.js)"]
+      ComplaintForm["📝 Grievance Submission Form"]
+      ChatbotWidget["💬 AI Chatbot Widget"]
+      Dashboard["📊 Citizen/Admin Dashboard"]
+      Charts["📈 Analytics Visualizations"]
+      AuthClient["🔐 JWT Authentication"]
+end
+
+%% ============================
+%% API GATEWAY
+%% ============================
+subgraph Gateway["🛣️ API Gateway (FastAPI)"]
+    Router["🔀 Request Router"]
+end
+
+%% ============================
+%% MICROSERVICES
+%% ============================
+subgraph ComplaintsMS["📮 Complaints Service"]
+    ComplaintsAPI["📝 Complaints API"]
+end
+
+subgraph LocationMS["🗺️ Location Service"]
+    LocationAPI["📍 Location API"]
+end
+
+subgraph AnalyticsMS["📊 Analytics Service"]
+    AnalyticsAPI["📈 Analytics API"]
+end
+
+subgraph ChatbotMS["🤖 Chatbot Service"]
+    ChatbotAPI["💬 Chatbot API"]
+end
+
+subgraph AuthMS["🔐 Auth Service"]
+    AuthAPI["🔑 JWT Issuer & Validator"]
+end
+
+%% ============================
+%% AI / ML MICROSERVICES
+%% ============================
+subgraph NLPServices["🧠 AI / ML Microservices"]
+    DeptClassifier["🏛️ Department Classifier (XLM-RoBERTa)"]
+    UrgencyClassifier["⏱️ Urgency Classifier"]
+    RAGChatbot["🧩 RAG Chatbot (Groq Llama-3.3-70B)"]
+end
+
+%% ============================
+%% DATABASE & STORAGE
+%% ============================
+subgraph Storage["🗄️ Data & Storage"]
+    PostgreSQL["🛢️ PostgreSQL Database"]
+    Datasets["📂 Analytics Datasets"]
+end
+
+%% ============================
+%% ORCHESTRATION / MLOPS
+%% ============================
+subgraph Orchestrator["⚙️ MLOps Orchestrator"]
+    AutoRetrain["🔁 Auto Model Retraining"]
+    WorkflowEngine["📦 Workflow Engine"]
+end
+
+%% ============================
+%% USER FLOWS
+%% ============================
+Citizen --> ComplaintForm --> Router
+Citizen --> ChatbotWidget --> Router
+Citizen --> Dashboard --> Router
+Citizen --> Charts --> Router
+Admin --> Dashboard --> Router
+Admin --> Charts --> Router
+AuthClient --> Router
+
+%% ============================
+%% ROUTING TO MICROSERVICES
+%% ============================
+Router --> ComplaintsAPI
+Router --> ChatbotAPI
+Router --> AnalyticsAPI
+Router --> LocationAPI
+Router --> AuthAPI
+
+%% ============================
+%% COMPLAINTS SERVICE → AI → DB
+%% ============================
+ComplaintsAPI --> DeptClassifier
+ComplaintsAPI --> UrgencyClassifier
+
+DeptClassifier --> PostgreSQL
+UrgencyClassifier --> PostgreSQL
+
+%% ============================
+%% OTHER SERVICES → STORAGE
+%% ============================
+LocationAPI --> PostgreSQL
+AnalyticsAPI --> Datasets
+ChatbotAPI --> RAGChatbot
+
+%% ============================
+%% AI SERVICE CONNECTIONS
+%% ============================
+RAGChatbot --> DeptClassifier
+RAGChatbot --> UrgencyClassifier
+
+%% ============================
+%% ORCHESTRATION FLOWS
+%% ============================
+WorkflowEngine --> AutoRetrain
+AutoRetrain --> DeptClassifier
+AutoRetrain --> UrgencyClassifier
+
+```
 
 ---
 
-## Quickstart
+## 🚀 Quick Start
 
 ### Prerequisites
+- **Docker Desktop** (recommended for quick setup)
+- **Node.js 18+** and **Python 3.11+** (for local development)
+- **Git**
 
-- Python 3.11+
-- Node.js 18+
-- Docker (optional, for containerized deployment)
+---
 
-### Local Development
-
-#### 1. Clone the repository
+### Installation & Running (Docker Recommended)
 
 ```bash
-git clone https://github.com/fuseai-fellowship/Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance.git
+# 1. Clone the repository
+git clone <repository-url>
 cd Sambodhan-AI-Powered-Grievance-Redressal-System-for-Local-Governance
+
+# 2. Set up environment variables
+cp src/backend/.env.example src/backend/.env
+cp frontend-next/.env.example frontend-next/.env
+# Edit both .env files with your configuration (API keys, secrets, DB URL, etc.)
+
+# 3. Start all services
+docker compose up -d --build
+
+# 4. Verify services are running
+docker compose ps
 ```
 
-#### 2. Setup Python backend
+---
 
+### Access the Application
+
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:8000](http://localhost:8000)
+- **Interactive API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Alternative API Docs:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Database Admin (if enabled):** [http://localhost:8080](http://localhost:8080)
+
+---
+
+<details>
+  <summary>🖥️ Local Development Setup (Optional)</summary>
+
+#### Backend (FastAPI)
 ```bash
 python -m venv env
-source env/bin/activate  # or .\env\Scripts\activate on Windows
+source env/bin/activate  # On Windows: .\env\Scripts\activate
 pip install -r requirements.txt
+cp src/backend/.env.example src/backend/.env
+# Edit src/backend/.env as needed
 cd src/backend/app
 uvicorn main:app --reload
 ```
 
-#### 3. Setup Next.js frontend
-
+#### Frontend (Next.js)
 ```bash
 cd frontend-next
 npm install
+cp .env.example .env
+# Edit frontend-next/.env as needed
 npm run dev
 ```
-
-#### 4. Docker Compose (all services)
-
-```bash
-docker-compose up --build
-```
-
-#### 5. Environment Variables
-
-- Copy `.env.example` to `.env` in both `frontend-next` and backend folders, and fill in required values (see docs).
+</details>
 
 ---
 
@@ -204,15 +363,16 @@ curl -X POST "https://sambodhan-department-classifier.hf.space/predict" \
   -H "Content-Type: application/json" \
   -d '{"text": "Where can I get a new water connection?"}'
 ```
+<details>
+  
+<summary>Model Evaluation</summary>
 
-#### Model Evaluation
-
-**Classification Report**
-![Classification Report](./results/dept_classifier/dept-classification-report.png)
-
-**Confusion Matrix**
-![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
-
+  **Classification Report**
+  ![Classification Report](./results/dept_classifier/dept-classification-report.png)
+  
+  **Confusion Matrix**
+  ![Confusion Matrix](./results/dept_classifier/dept-classifier-confusion-matrix.png)
+</details>
 ---
 
 ### 2. Urgency Classification Model
@@ -234,14 +394,16 @@ curl -X POST "https://sambodhan-urgency-classifier.hf.space/predict_urgency" \
   -H "Content-Type: application/json" \
   -d '{"text": "The water supply in my area has been cut off for 3 days."}'
 ```
+<details>
+  <summary>Model Performance</summary> 
 
-### Model Performance
+  **Classification Report**
+  ![Classification Report](./results/urgency_classifier/classification_report.png)
+  
+  **Confusion Matrix**
+  ![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
 
-**Classification Report**
-![Classification Report](./results/urgency_classifier/classification_report.png)
-
-**Confusion Matrix**
-![Confusion Matrix](./results/urgency_classifier/confusion_matrix.png)
+</details>
 
 
 ---
@@ -290,7 +452,8 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 - **Resource-efficient** – the Space auto-pauses after completion to conserve compute.
 - **Notify User** - Send Run Summary Email to Admin
 
-#### Components
+<details>
+  <summary>Components</summary> 
 
 | Component                 | Role                                            |
 | ------------------------- | ----------------------------------------------- |
@@ -299,7 +462,10 @@ The **Dataset Preparation Pipeline** automatically gathers, cleans, and publishe
 | **HF Dataset Hub**        | Hosts version-controlled training datasets      |
 | **Weights & Biases**      | Logs dataset updates and metadata, Notify Admin |
 
-#### Workflow
+</details>
+
+<details>
+  <summary>Workflow</summary>
 
 ```mermaid
 graph LR
@@ -314,6 +480,7 @@ graph LR
 ```
 
 > Fig: Dataset Preparation Pipeline
+</details>
 
 **Detailed Guide:** See **[→ docs/prepare_dataset.md ](docs/prepare_dataset.md)**
 for setup, configuration, and deployment instructions.
@@ -333,7 +500,8 @@ The **Retraining Pipeline** ensures Sambodhan’s models continuously improve ba
 - **Full traceability** – logs metrics, confusion matrices, and deployment decisions to **W&B**.
 - **Notify User** - Send Run Summary Email to Admin
 
-#### Components
+<details>
+<summary>Components</summary>
 
 | Component            | Role                                                      |
 | -------------------- | --------------------------------------------------------- |
@@ -343,7 +511,10 @@ The **Retraining Pipeline** ensures Sambodhan’s models continuously improve ba
 | **Model Hub**        | Publishes retrained model versions                        |
 | **Weights & Biases** | Tracks experiments,Notify Admin, results, and comparisons |
 
-#### Workflow
+</details>
+
+<details>
+  <summary>Workflow</summary> 
 
 ```mermaid
 graph LR
@@ -358,6 +529,7 @@ graph LR
 ```
 
 > Fig: Model Retraining Pipeline
+</details>
 
 **Detailed Guide:**
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/retraining_classifier.md ](docs/retraining_classifier.md)**
@@ -376,7 +548,8 @@ The **Orchestrator** coordinates dataset preparation and model retraining using 
 - **Step-by-step logging** – GitHub Actions logs show dataset length, threshold evaluation, dataset prep triggers, polling, and retraining.
 - **Automated scheduling** – orchestrator runs at regular intervals using GitHub Actions cron jobs.
 
-#### Workflow
+<details>
+  <summary>Workflow</summary> 
 
 ```mermaid
 graph LR
@@ -394,6 +567,8 @@ graph LR
 
 > Fig: Continuous Learning Orchestration Pipeline
 
+</details>
+
 **Detailed Guide:**
 For complete setup instructions, environment configuration, and architecture diagrams, see: **[→ docs/orchestrator.md ](docs/orchestrator.md)**
 
@@ -401,27 +576,31 @@ For complete setup instructions, environment configuration, and architecture dia
 
 ## Frontend Features
 
-- Built with Next.js (React, TypeScript)
-- Citizen dashboard: submit grievances, view status, analytics
-- Admin dashboard: manage grievances, view metrics, department/urgency insights
-- Authentication: login, protected routes, context-based auth
-- Data visualizations: charts for response time, location hotspots, quality metrics
-- Modular UI components for forms, tables, charts
-- API client for backend communication (Axios)
-- **Integrated Chatbot for citizen support and FAQ**
+- Next.js (React, TypeScript) SPA
+- Citizen dashboard: submit, track, and analyze grievances
+- **Department Admin dashboard:** manage and resolve department-specific complaints, view department analytics
+- **Municipal Admin dashboard:** oversee all grievances in the municipality, assign and monitor complaints, access location-based insights
+- **Super Admin dashboard:** system-wide management, user/admin controls, advanced analytics and reporting
+- Secure authentication (JWT, context-based)
+- Interactive charts: response time, location hotspots, quality metrics
+- Integrated AI chatbot for support and FAQ
+- Modular, responsive UI components
+- API client (Axios) for backend communication
+- Multi-language support (Nepali & English)
+- Dockerized for easy deployment
 
 ---
 
 ## Backend Features
 
 - FastAPI RESTful API
-- Modular routers: complaints, location, orchestrator, etc.
-- Environment variable loading via `.env` (secure config)
-- Department and urgency classification endpoints
-- Database integration (PostgreSQL)
-- Automated feedback loop for continuous learning
+- Modular routers: complaints, location, orchestrator, chatbot, analytics
+- Secure config via `.env`
+- Department & urgency classification (ML/NLP)
+- PostgreSQL database integration
+- Automated retraining & feedback loop
 - Dockerized for scalable deployment
-- **Chatbot endpoint for conversational support**
+- Chatbot endpoint powered by Groq Llama-3.3-70B
 
 ---
 
@@ -430,22 +609,37 @@ For complete setup instructions, environment configuration, and architecture dia
 - Real-time metrics: grievance volume, response time, department/urgency distribution
 - Location-based insights: hotspot mapping
 - Quality metrics: resolution rates, feedback analysis
-- Admin tools: manage, assign, and track grievances
-- Data export and reporting
+- **Department Admin tools:** manage and resolve department complaints, view department performance
+- **Municipal Admin tools:** assign, track, and oversee all municipal grievances, monitor location trends
+- **Super Admin tools:** manage users/admins, district wise analytics, export and reporting
 
 ---
 
 ## Chatbot System
 
-Sambodhan includes an AI-powered chatbot to assist citizens in submitting grievances, answering FAQs, and providing guidance.
+Sambodhan features an advanced AI-powered chatbot that streamlines citizen interaction, grievance submission, and support.
 
 ### Features
 
-- Natural language understanding for English language
-- FAQ and helpdesk support
-- Grievance submission via chat
-- Department and urgency prediction via chat
-- Integrated with backend ML models
+- Natural language understanding for Nepali and English
+- Conversational FAQ and helpdesk support
+- Guided grievance submission directly via chat
+- Department and urgency prediction using backend ML models (XLM-RoBERTa, Groq Llama-3.3-70B)
+- Context-aware responses and escalation to human admins when needed
+- Real-time integration with Retrieval-Augmented Generation (RAG) for accurate, document-grounded answers
+- Secure API endpoint powered by FastAPI for seamless frontend-backend communication
+- Available across citizen dahsboard
+- Supports both web and mobile interfaces
+- Dockerized and scalable for production environments
+
+### Technical Highlights
+
+- Utilizes Groq Llama-3.3-70B LLM for high-quality, low-latency conversational AI
+- RAG pipeline combines document retrieval with generative LLM for factual responses
+- FastAPI backend exposes `/chatbot` endpoint for chat interactions
+- Frontend integration via modular chatbot widget (Next.js, React)
+- Multi-intent detection: FAQ, grievance submission, escalation, feedback
+- Secure, context-driven session management for personalized conversations
 
 ---
 
@@ -500,3 +694,17 @@ We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for gu
 4. Submit a pull request with a detailed description.
 
 ---
+
+📄 **License**  
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
+
+🆘 **Support**  
+- **Documentation:** See the `docs` directory for architecture, models, and usage guides  
+- **Issues:** Create an issue on GitHub for bug reports or feature requests  
+- **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs) (when running)
+
+🙏 **Acknowledgments**  
+- FastAPI for the backend framework  
+- Next.js and React for the frontend  
+- Hugging Face Transformers and Groq for AI/ML models  
+- The open-source community for inspiration and resources  
