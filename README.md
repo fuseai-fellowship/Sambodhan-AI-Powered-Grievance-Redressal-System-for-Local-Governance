@@ -24,6 +24,12 @@ Sambodhan is a full-stack AI-powered platform for citizen grievance management i
 
 ---
 
+##  Project Demo
+
+https://github.com/user-attachments/assets/9a10a840-c52a-4b78-9fbf-ebb1a6e2def0
+
+---
+
 ### Table of Contents
 
 - [Features](#features)
